@@ -5,21 +5,37 @@ import '../repository/group_repository.dart';
 import '../../../models/group_model.dart';
 import '../../../models/user_model.dart';
 import '../../auth/repository/user_repository.dart';
+import '../../auth/controller/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final groupControllerProvider = NotifierProvider<GroupController, bool>(GroupController.new);
 
 final userGroupsProvider = StreamProvider<List<GroupModel>>((ref) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return Stream.value([]);
-  final groupRepo = ref.watch(groupRepositoryProvider);
-  return groupRepo.getUserGroups(userId);
+  final authState = ref.watch(authStateChangeProvider);
+  return authState.when(
+    data: (user) {
+      if (user == null) return Stream.value([]);
+      return ref.watch(groupRepositoryProvider).getUserGroups(user.uid);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});
+
+final groupStreamProvider = StreamProvider.family<GroupModel, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getGroup(groupId);
 });
 
 final currentUserProvider = FutureProvider((ref) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return null;
-  return ref.watch(userRepositoryProvider).getUser(userId);
+  final authState = ref.watch(authStateChangeProvider);
+  return authState.when(
+    data: (user) {
+      if (user == null) return null;
+      return ref.watch(userRepositoryProvider).getUser(user.uid);
+    },
+    loading: () => null,
+    error: (_, __) => null,
+  );
 });
 
 class GroupController extends Notifier<bool> {

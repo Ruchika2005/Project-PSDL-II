@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/record_model.dart';
 import '../../finance/controller/finance_controller.dart';
+import '../../auth/controller/auth_controller.dart';
 import 'add_record_screen.dart';
 
 class RecordsScreen extends ConsumerWidget {
@@ -11,6 +12,7 @@ class RecordsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recordsAsync = ref.watch(recordsProvider);
+    final accountsAsync = ref.watch(accountsProvider);
     
     return Scaffold(
       appBar: AppBar(
@@ -21,14 +23,21 @@ class RecordsScreen extends ConsumerWidget {
             onPressed: () {
               // Monthly filter logic later
             },
-          )
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
+            tooltip: 'Logout',
+          ),
         ],
       ),
       body: recordsAsync.when(
         data: (records) {
+          final accounts = accountsAsync.value ?? [];
+          double totalBalance = accounts.fold(0, (sum, item) => sum + item.balance);
+          
           double totalIncome = records.where((r) => r.type == RecordType.income).fold(0, (sum, item) => sum + item.amount);
           double totalExpense = records.where((r) => r.type == RecordType.expense).fold(0, (sum, item) => sum + item.amount);
-          double balance = totalIncome - totalExpense;
 
           return Column(
             children: [
@@ -45,7 +54,7 @@ class RecordsScreen extends ConsumerWidget {
                   children: [
                     const Text('Total Balance', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
                     const SizedBox(height: 8),
-                    Text('₹${balance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    Text('₹${totalBalance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary)),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

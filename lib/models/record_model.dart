@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 enum RecordType { income, expense }
@@ -27,19 +28,28 @@ class RecordModel {
       'title': title,
       'amount': amount,
       'type': type.name,
-      'date': date.millisecondsSinceEpoch,
+      'date': Timestamp.fromDate(date),
       'category': category,
       'account': account,
     };
   }
 
   factory RecordModel.fromMap(Map<String, dynamic> map) {
+    DateTime date;
+    if (map['date'] is int) {
+      date = DateTime.fromMillisecondsSinceEpoch(map['date']);
+    } else if (map['date'] is Timestamp) {
+      date = (map['date'] as Timestamp).toDate();
+    } else {
+      date = DateTime.now();
+    }
+
     return RecordModel(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
       amount: (map['amount'] ?? 0).toDouble(),
-      type: RecordType.values.firstWhere((e) => e.name == map['type']),
-      date: DateTime.fromMillisecondsSinceEpoch(map['date']),
+      type: RecordType.values.byName(map['type'] ?? 'expense'),
+      date: date,
       category: map['category'] ?? '',
       account: map['account'] ?? '',
     );

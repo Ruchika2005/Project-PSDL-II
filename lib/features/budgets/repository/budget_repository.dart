@@ -22,6 +22,10 @@ class BudgetRepository {
   Future<void> removeBudget(String userId, String budgetId) async {
     await _firestore.collection('users').doc(userId).collection('budgets').doc(budgetId).delete();
   }
+
+  Future<void> updateBudgetSpent(String userId, String budgetId, double spent) async {
+    await _firestore.collection('users').doc(userId).collection('budgets').doc(budgetId).update({'spent': spent});
+  }
 }
 
 final budgetRepositoryProvider = Provider((ref) => BudgetRepository(firestore: FirebaseFirestore.instance));

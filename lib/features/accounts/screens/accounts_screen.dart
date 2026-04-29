@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../finance/controller/finance_controller.dart';
+import '../../auth/controller/auth_controller.dart';
 
 class AccountsScreen extends ConsumerWidget {
   const AccountsScreen({super.key});
@@ -13,6 +14,13 @@ class AccountsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Accounts'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: accountsAsync.when(
         data: (accounts) {

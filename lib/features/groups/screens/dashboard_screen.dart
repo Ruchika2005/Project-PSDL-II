@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/controller/auth_controller.dart';
+import '../../finance/controller/finance_controller.dart';
 import '../controller/group_controller.dart';
 import 'create_group_screen.dart';
 import 'group_detail_screen.dart';
@@ -17,10 +18,9 @@ class DashboardScreen extends ConsumerWidget {
         title: const Text('Groups'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ref.read(authControllerProvider.notifier).logOut();
-            },
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
+            tooltip: 'Logout',
           )
         ],
       ),
@@ -51,7 +51,7 @@ class DashboardScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => GroupDetailScreen(group: group)),
+                      MaterialPageRoute(builder: (context) => GroupDetailScreen(groupId: group.id)),
                     );
                   },
                 ),
@@ -65,6 +65,30 @@ class DashboardScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateGroupDialog(context, ref),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _showResetConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset All Data?'),
+        content: const Text('This will delete all your records, accounts, and categories. This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(recordsControllerProvider.notifier).resetAllData(context);
+            },
+            child: const Text('RESET EVERYTHING', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

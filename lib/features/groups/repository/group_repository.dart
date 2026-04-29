@@ -26,4 +26,12 @@ class GroupRepository {
       'members': FieldValue.arrayUnion([name]),
     });
   }
+
+  Stream<GroupModel> getGroup(String groupId) {
+    return _firestore
+        .collection('groups')
+        .doc(groupId)
+        .snapshots()
+        .map((doc) => GroupModel.fromMap(doc.data() as Map<String, dynamic>));
+  }
 }

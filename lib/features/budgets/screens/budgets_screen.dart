@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controller/budget_controller.dart';
 import '../../finance/controller/finance_controller.dart';
+import '../../auth/controller/auth_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/category_model.dart';
 
@@ -16,82 +17,137 @@ class BudgetsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Monthly Budgets'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: budgets.isEmpty
           ? const Center(child: Text('No budgets set yet. Tap + to set one!'))
-          : categoriesAsync.when(
-              data: (allCategories) {
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: budgets.length,
-                  itemBuilder: (context, index) {
-                    final budget = budgets[index];
-                    final category = allCategories.firstWhere(
-                        (c) => c.name == budget.categoryName,
-                        orElse: () => allCategories.first);
-                    
-                    final progress = budget.limit > 0 ? budget.spent / budget.limit : 0.0;
-                    final isOver = progress > 1.0;
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: category.color.withValues(alpha: 0.2),
-                                      child: Icon(category.icon, color: category.color),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(budget.categoryName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                                  onPressed: () => ref.read(budgetsControllerProvider.notifier).removeBudget(budget.id),
-                                )
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            LinearProgressIndicator(
-                              value: progress > 1.0 ? 1.0 : progress,
-                              backgroundColor: Colors.grey[800],
-                              valueColor: AlwaysStoppedAnimation<Color>(isOver ? AppColors.error : AppColors.success),
-                              minHeight: 10,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Spent: ₹${budget.spent.toStringAsFixed(0)}', 
-                                  style: TextStyle(color: isOver ? AppColors.error : Colors.white)),
-                                Text('Limit: ₹${budget.limit.toStringAsFixed(0)}', 
-                                  style: const TextStyle(color: AppColors.textSecondary)),
-                              ],
-                            ),
-                            if (isOver)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text('Over budget by ₹${(budget.spent - budget.limit).toStringAsFixed(0)}!', 
-                                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
-                              ),
-                          ],
-                        ),
+          : Column(
+              children: [
+                // Overall Summary Card
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Overall Monthly Budget',
+                        style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, trace) => Center(child: Text('Error loading categories: $e')),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SummaryItem(
+                            label: 'Total Limit',
+                            value: '₹${budgets.fold(0.0, (sum, b) => sum + b.limit).toStringAsFixed(0)}',
+                          ),
+                          _SummaryItem(
+                            label: 'Total Spent',
+                            value: '₹${budgets.fold(0.0, (sum, b) => sum + b.spent).toStringAsFixed(0)}',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: categoriesAsync.when(
+                    data: (allCategories) {
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: budgets.length,
+                        itemBuilder: (context, index) {
+                          final budget = budgets[index];
+                          final category = allCategories.firstWhere(
+                              (c) => c.name == budget.categoryName,
+                              orElse: () => allCategories.first);
+                          
+                          final progress = budget.limit > 0 ? budget.spent / budget.limit : 0.0;
+                          final isOver = progress > 1.0;
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            backgroundColor: category.color.withValues(alpha: 0.2),
+                                            child: Icon(category.icon, color: category.color),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(budget.categoryName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                                        onPressed: () => ref.read(budgetsControllerProvider.notifier).removeBudget(budget.id),
+                                      )
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  LinearProgressIndicator(
+                                    value: progress > 1.0 ? 1.0 : progress,
+                                    backgroundColor: Colors.grey[800],
+                                    valueColor: AlwaysStoppedAnimation<Color>(isOver ? AppColors.error : AppColors.success),
+                                    minHeight: 10,
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('Spent: ₹${budget.spent.toStringAsFixed(0)}', 
+                                        style: TextStyle(color: isOver ? AppColors.error : Colors.white)),
+                                      Text('Limit: ₹${budget.limit.toStringAsFixed(0)}', 
+                                        style: const TextStyle(color: AppColors.textSecondary)),
+                                    ],
+                                  ),
+                                  if (isOver)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8.0),
+                                      child: Text('Over budget by ₹${(budget.spent - budget.limit).toStringAsFixed(0)}!', 
+                                        style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, trace) => Center(child: Text('Error loading categories: $e')),
+                  ),
+                ),
+              ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -148,6 +204,23 @@ class BudgetsScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final String label;
+  final String value;
+  const _SummaryItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.secondary, fontSize: 13)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: AppColors.secondary, fontSize: 20, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }

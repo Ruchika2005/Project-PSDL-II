@@ -5,12 +5,19 @@ import '../../../models/record_model.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../auth/controller/auth_controller.dart';
 import '../repository/budget_repository.dart';
 
 final budgetsProvider = StreamProvider<List<BudgetModel>>((ref) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return Stream.value([]);
-  return ref.watch(budgetRepositoryProvider).getBudgets(userId);
+  final authState = ref.watch(authStateChangeProvider);
+  return authState.when(
+    data: (user) {
+      if (user == null) return Stream.value([]);
+      return ref.watch(budgetRepositoryProvider).getBudgets(user.uid);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 class BudgetsController extends Notifier<bool> {
@@ -48,9 +55,15 @@ final budgetsWithProgressProvider = Provider<List<BudgetModel>>((ref) {
     data: (budgets) {
       return recordsAsync.when(
         data: (records) {
+          final now = DateTime.now();
           return budgets.map((budget) {
             final spent = records
-                .where((r) => r.type == RecordType.expense && r.category == budget.categoryName)
+                .where((r) => 
+                  r.type == RecordType.expense && 
+                  r.category == budget.categoryName &&
+                  r.date.month == now.month &&
+                  r.date.year == now.year
+                )
                 .fold(0.0, (sum, r) => sum + r.amount);
             
             return budget.copyWith(spent: spent);

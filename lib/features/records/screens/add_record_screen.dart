@@ -18,6 +18,7 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
   final titleController = TextEditingController();
   String? selectedCategoryId;
   String? selectedAccountId;
+  DateTime selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -28,32 +29,68 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
       appBar: AppBar(
         title: const Text('Add Record'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // Toggle Switch
+            // Date Selection
+            InkWell(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (date != null) {
+                  setState(() => selectedDate = date);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Date: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Type Toggle
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isExpense ? AppColors.error : AppColors.secondary,
-                      foregroundColor: Colors.white,
-                    ),
                     onPressed: () => setState(() => isExpense = true),
-                    child: const Text('Expense'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isExpense ? AppColors.error : AppColors.surface,
+                      foregroundColor: isExpense ? Colors.white : AppColors.textSecondary,
+                    ),
+                    child: const Text('EXPENSE'),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: !isExpense ? AppColors.success : AppColors.secondary,
-                      foregroundColor: Colors.white,
-                    ),
                     onPressed: () => setState(() => isExpense = false),
-                    child: const Text('Income'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: !isExpense ? AppColors.success : AppColors.surface,
+                      foregroundColor: !isExpense ? Colors.white : AppColors.textSecondary,
+                    ),
+                    child: const Text('INCOME'),
                   ),
                 ),
               ],
@@ -118,23 +155,28 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
               loading: () => const LinearProgressIndicator(),
               error: (e, trace) => Text('Error loading accounts: $e'),
             ),
-            const Spacer(),
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: ref.watch(recordsControllerProvider) ? null : () {
                   if (amountController.text.isNotEmpty && titleController.text.isNotEmpty && selectedCategoryId != null && selectedAccountId != null) {
                     ref.read(recordsControllerProvider.notifier).addRecord(
-                      titleController.text,
-                      double.parse(amountController.text),
-                      isExpense ? RecordType.expense : RecordType.income,
-                      selectedCategoryId!,
-                      selectedAccountId!,
+                      title: titleController.text,
+                      amount: double.parse(amountController.text),
+                      type: isExpense ? RecordType.expense : RecordType.income,
+                      categoryId: selectedCategoryId!,
+                      accountId: selectedAccountId!,
+                      context: context,
+                      date: selectedDate,
                     );
-                    Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
                   }
                 },
-                child: const Text('SAVE RECORD'),
+                child: ref.watch(recordsControllerProvider) 
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                  : const Text('SAVE RECORD'),
               ),
             )
           ],

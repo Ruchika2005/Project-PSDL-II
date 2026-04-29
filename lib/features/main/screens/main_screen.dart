@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../groups/screens/dashboard_screen.dart'; // Existing Groups Screen
 import '../../records/screens/records_screen.dart'; // New Records Screen
@@ -7,6 +8,7 @@ import '../../categories/screens/categories_screen.dart'; // Categories Screen
 import '../../analysis/screens/analysis_screen.dart'; // Analysis Screen
 import '../../budgets/screens/budgets_screen.dart'; // Budgets Screen
 import '../../finance/controller/finance_controller.dart';
+import '../../auth/controller/auth_controller.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -23,6 +25,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     super.initState();
     // Initialize default data for new users in Firestore
     Future.microtask(() {
+      ref.read(authControllerProvider.notifier).syncUserProfile();
       ref.read(accountsControllerProvider.notifier).ensureDefaultAccounts();
       ref.read(categoriesControllerProvider.notifier).ensureDefaultCategories();
     });

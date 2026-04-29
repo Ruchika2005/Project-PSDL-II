@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/category_model.dart';
 import '../../finance/controller/finance_controller.dart';
+import '../../auth/controller/auth_controller.dart';
 
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
@@ -21,6 +22,13 @@ class CategoriesScreen extends ConsumerWidget {
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Categories'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded),
+                  onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
+                  tooltip: 'Logout',
+                ),
+              ],
               bottom: const TabBar(
                 indicatorColor: AppColors.primary,
                 labelColor: AppColors.primary,

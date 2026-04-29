@@ -54,6 +54,17 @@ class FinanceRepository {
   Future<void> addRecord(String userId, RecordModel record) async {
     await _firestore.collection('users').doc(userId).collection('records').doc(record.id).set(record.toMap());
   }
+
+  Future<void> deleteAllUserData(String userId) async {
+    // Delete subcollections (Firebase doesn't delete subcollections automatically when parent doc is deleted)
+    final collections = ['records', 'accounts', 'categories'];
+    for (var coll in collections) {
+      final snapshots = await _firestore.collection('users').doc(userId).collection(coll).get();
+      for (var doc in snapshots.docs) {
+        await doc.reference.delete();
+      }
+    }
+  }
 }
 
 final financeRepositoryProvider = Provider((ref) => FinanceRepository(firestore: FirebaseFirestore.instance));
