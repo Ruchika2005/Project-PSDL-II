@@ -40,6 +40,10 @@ class FinanceRepository {
     await _firestore.collection('users').doc(userId).collection('categories').doc(category.id).set(category.toMap());
   }
 
+  Future<void> deleteCategory(String userId, String categoryId) async {
+    await _firestore.collection('users').doc(userId).collection('categories').doc(categoryId).delete();
+  }
+
   // --- RECORDS ---
   Stream<List<RecordModel>> getRecords(String userId) {
     return _firestore

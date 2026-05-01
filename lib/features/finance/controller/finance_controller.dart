@@ -117,11 +117,17 @@ class CategoriesController extends Notifier<bool> {
     final category = CategoryModel(
       id: const Uuid().v4(),
       name: name,
-      icon: Icons.category,
-      color: Colors.teal,
+      icon: CategoryModel.getIconForName(name),
+      color: CategoryModel.getColorForName(name),
       type: type,
     );
     await _repo.addCategory(userId, category);
+  }
+
+  Future<void> deleteCategory(String categoryId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+    await _repo.deleteCategory(userId, categoryId);
   }
 
   Future<void> ensureDefaultCategories() async {
@@ -129,14 +135,22 @@ class CategoriesController extends Notifier<bool> {
     if (userId == null) return;
     
     final categories = await ref.read(categoriesProvider.future);
-    if (categories.isEmpty) {
-      final defaults = [
-        CategoryModel(id: '1', name: 'Food', icon: Icons.restaurant, color: Colors.orange, type: CategoryType.expense),
-        CategoryModel(id: '2', name: 'Transport', icon: Icons.directions_bus, color: Colors.blue, type: CategoryType.expense),
-        CategoryModel(id: '3', name: 'Shopping', icon: Icons.shopping_bag, color: Colors.pink, type: CategoryType.expense),
-        CategoryModel(id: '4', name: 'Salary', icon: Icons.work, color: Colors.green, type: CategoryType.income),
-      ];
-      for (var cat in defaults) {
+    final existingNames = categories.map((c) => c.name.toLowerCase()).toSet();
+
+    final defaults = [
+      CategoryModel(id: '1', name: 'Food', icon: Icons.restaurant, color: Colors.orange, type: CategoryType.expense),
+      CategoryModel(id: '2', name: 'Transport', icon: Icons.directions_bus, color: Colors.blue, type: CategoryType.expense),
+      CategoryModel(id: '3', name: 'Shopping', icon: Icons.shopping_bag, color: Colors.pink, type: CategoryType.expense),
+      CategoryModel(id: '4', name: 'Health', icon: Icons.medical_services, color: Colors.red, type: CategoryType.expense),
+      CategoryModel(id: '5', name: 'Groceries', icon: Icons.local_grocery_store, color: Colors.lightGreen, type: CategoryType.expense),
+      CategoryModel(id: '6', name: 'Education', icon: Icons.school, color: Colors.indigo, type: CategoryType.expense),
+      CategoryModel(id: '7', name: 'Entertainment', icon: Icons.movie, color: Colors.purple, type: CategoryType.expense),
+      CategoryModel(id: '8', name: 'Bills', icon: Icons.receipt, color: Colors.amber, type: CategoryType.expense),
+      CategoryModel(id: '9', name: 'Salary', icon: Icons.work, color: Colors.green, type: CategoryType.income),
+    ];
+
+    for (var cat in defaults) {
+      if (!existingNames.contains(cat.name.toLowerCase())) {
         await _repo.addCategory(userId, cat);
       }
     }
