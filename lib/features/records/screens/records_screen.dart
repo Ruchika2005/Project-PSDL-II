@@ -19,12 +19,6 @@ class RecordsScreen extends ConsumerWidget {
         title: const Text('Records'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // Monthly filter logic later
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.logout_rounded),
             onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
             tooltip: 'Logout',

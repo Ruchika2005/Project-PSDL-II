@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/group_model.dart';
 import '../../../models/expense_model.dart';
 import '../controller/expense_controller.dart';
+import '../../groups/controller/group_controller.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   final GroupModel group;
@@ -25,6 +26,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+    // Default to the first member's name (which is usually the creator)
+    _paidBy = widget.group.members.isNotEmpty ? widget.group.members.first : 'User';
     for (var memberId in widget.group.members) {
       _splitControllers[memberId] = TextEditingController();
     }
@@ -59,7 +62,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         groupId: widget.group.id,
         description: _descController.text.trim(),
         amount: amount,
-        paidBy: _paidBy ?? FirebaseAuth.instance.currentUser!.uid,
+        paidBy: _paidBy!,
         splits: splits,
         splitType: _splitType,
         context: context,
@@ -70,6 +73,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(expenseControllerProvider);
+    final memberNamesAsync = ref.watch(memberNamesProvider(widget.group));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Add Expense')),
@@ -105,22 +109,42 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   ),
                   const SizedBox(height: 16),
                   // Payer Selection
-                  DropdownButtonFormField<String>(
-                    value: _paidBy ?? widget.group.members.first,
-                    items: widget.group.members.map((name) {
-                      return DropdownMenuItem<String>(
-                        value: name,
-                        child: Text('Paid by: $name'),
-                      );
-                    }).toList(),
-                    onChanged: (val) => setState(() => _paidBy = val),
-                    decoration: const InputDecoration(
-                      labelText: 'Payer',
-                      prefixIcon: Icon(Icons.person),
+                  memberNamesAsync.when(
+                    data: (map) => DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _paidBy ?? widget.group.members.first,
+                      items: widget.group.members.map((id) {
+                        final name = map[id] ?? id;
+                        return DropdownMenuItem<String>(
+                          value: id,
+                          child: Text('Paid by: $name'),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => _paidBy = val),
+                      decoration: const InputDecoration(
+                        labelText: 'Payer',
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => DropdownButtonFormField<String>(
+                      value: _paidBy ?? widget.group.members.first,
+                      items: widget.group.members.map((id) {
+                        return DropdownMenuItem<String>(
+                          value: id,
+                          child: Text('Paid by: $id'),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => _paidBy = val),
+                      decoration: const InputDecoration(
+                        labelText: 'Payer',
+                        prefixIcon: Icon(Icons.person),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<SplitType>(
+                    isExpanded: true,
                     value: _splitType,
                     items: SplitType.values.map((type) {
                       return DropdownMenuItem(
@@ -144,11 +168,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       padding: EdgeInsets.symmetric(vertical: 8.0),
                       child: Text('Enter splits for each member:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                    ...widget.group.members.map((name) {
+                    ...widget.group.members.map((id) {
+                      final name = memberNamesAsync.value?[id] ?? id;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: TextFormField(
-                          controller: _splitControllers[name],
+                          controller: _splitControllers[id],
                           decoration: InputDecoration(
                             labelText: 'Member: $name',
                             suffixText: _splitType == SplitType.percentage ? '%' : '₹',

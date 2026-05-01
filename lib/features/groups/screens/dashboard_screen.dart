@@ -5,6 +5,8 @@ import '../../finance/controller/finance_controller.dart';
 import '../controller/group_controller.dart';
 import 'create_group_screen.dart';
 import 'group_detail_screen.dart';
+import 'invites_screen.dart';
+import '../../../core/constants/app_colors.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -17,6 +19,23 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Groups'),
         actions: [
+          ref.watch(userInvitesProvider).when(
+            data: (invites) => Badge(
+              label: Text(invites.length.toString()),
+              isLabelVisible: invites.isNotEmpty,
+              backgroundColor: AppColors.error,
+              child: IconButton(
+                icon: const Icon(Icons.mail_rounded),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const InvitesScreen()),
+                ),
+                tooltip: 'Invites',
+              ),
+            ),
+            loading: () => const SizedBox(),
+            error: (_, __) => const SizedBox(),
+          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
@@ -95,32 +114,18 @@ class DashboardScreen extends ConsumerWidget {
 
   void _showCreateGroupDialog(BuildContext context, WidgetRef ref) {
     final nameController = TextEditingController();
-    final membersController = TextEditingController();
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Create New Group'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Group Name',
-                hintText: 'e.g., Trip to Goa',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: membersController,
-              decoration: const InputDecoration(
-                labelText: 'Add Members (Optional)',
-                hintText: 'Enter names separated by commas',
-                helperText: 'e.g., John, Alice, Bob',
-              ),
-            ),
-          ],
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Group Name',
+            hintText: 'e.g., Trip to Goa',
+          ),
         ),
         actions: [
           TextButton(
@@ -129,16 +134,10 @@ class DashboardScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                final names = membersController.text
-                    .split(',')
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty)
-                    .toList();
-                
+              if (nameController.text.trim().isNotEmpty) {
                 ref.read(groupControllerProvider.notifier).createGroup(
                       nameController.text.trim(),
-                      names,
+                      [], // Start with empty members (creator is added automatically in controller)
                       context,
                     );
               }

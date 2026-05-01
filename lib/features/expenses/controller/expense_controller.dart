@@ -69,4 +69,42 @@ class ExpenseController extends Notifier<bool> {
     }
     state = false;
   }
+
+  Future<void> settleDebt({
+    required String groupId,
+    required String from,
+    required String to,
+    required double amount,
+    required BuildContext context,
+  }) async {
+    state = true;
+    try {
+      final expenseId = const Uuid().v4();
+      final expense = ExpenseModel(
+        id: expenseId,
+        groupId: groupId,
+        description: 'Settlement: $from to $to',
+        amount: amount,
+        paidBy: from,
+        splits: [
+          ExpenseSplit(userId: to, amount: amount),
+        ],
+        splitType: SplitType.unequal,
+        createdAt: DateTime.now(),
+      );
+
+      await _expenseRepository.addExpense(expense);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Marked ₹${amount.toStringAsFixed(2)} as paid to $to')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    state = false;
+  }
 }

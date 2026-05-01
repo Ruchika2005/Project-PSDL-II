@@ -16,14 +16,14 @@ class GroupRepository {
   Stream<List<GroupModel>> getUserGroups(String userId) {
     return _firestore
         .collection('groups')
-        .where('createdBy', isEqualTo: userId)
+        .where('members', arrayContains: userId)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => GroupModel.fromMap(doc.data())).toList());
   }
 
-  Future<void> addMemberToGroup(String groupId, String name) async {
+  Future<void> addMemberToGroup(String groupId, String userId) async {
     await _firestore.collection('groups').doc(groupId).update({
-      'members': FieldValue.arrayUnion([name]),
+      'members': FieldValue.arrayUnion([userId]),
     });
   }
 
@@ -32,6 +32,11 @@ class GroupRepository {
         .collection('groups')
         .doc(groupId)
         .snapshots()
+        .where((doc) => doc.exists && doc.data() != null)
         .map((doc) => GroupModel.fromMap(doc.data() as Map<String, dynamic>));
+  }
+
+  Future<void> deleteGroup(String groupId) async {
+    await _firestore.collection('groups').doc(groupId).delete();
   }
 }

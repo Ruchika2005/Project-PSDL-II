@@ -41,8 +41,8 @@ class CategoriesScreen extends ConsumerWidget {
             ),
             body: TabBarView(
               children: [
-                _buildCategoryList(expenseCategories),
-                _buildCategoryList(incomeCategories),
+                _buildCategoryList(expenseCategories, ref),
+                _buildCategoryList(incomeCategories, ref),
               ],
             ),
             floatingActionButton: FloatingActionButton(
@@ -59,7 +59,7 @@ class CategoriesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryList(List<CategoryModel> categories) {
+  Widget _buildCategoryList(List<CategoryModel> categories, WidgetRef ref) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -75,6 +75,25 @@ class CategoriesScreen extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: InkWell(
             onTap: () {},
+            onLongPress: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Category'),
+                  content: Text('Are you sure you want to delete "${category.name}"?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(categoriesControllerProvider.notifier).deleteCategory(category.id);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+            },
             borderRadius: BorderRadius.circular(12),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -100,48 +119,80 @@ class CategoriesScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Add Category'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Category Name'),
+        builder: (context, setState) {
+          final suggestedIcon = CategoryModel.getIconForName(nameController.text);
+          final suggestedColor = CategoryModel.getColorForName(nameController.text);
+
+          return AlertDialog(
+            title: const Text('Add Category'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Category Name',
+                    hintText: 'e.g., Gym, Netflix, Rent',
+                  ),
+                  onChanged: (val) => setState(() {}), // Trigger preview update
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Text('Preview: ', style: TextStyle(color: AppColors.textSecondary)),
+                    const SizedBox(width: 12),
+                    CircleAvatar(
+                      backgroundColor: suggestedColor.withValues(alpha: 0.2),
+                      child: Icon(suggestedIcon, color: suggestedColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        nameController.text.isEmpty ? 'Type to see icon' : 'Smart Suggestion',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: suggestedColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                DropdownButton<CategoryType>(
+                  value: selectedType,
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem(value: CategoryType.expense, child: Text('Expense')),
+                    DropdownMenuItem(value: CategoryType.income, child: Text('Income')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setState(() => selectedType = val);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('CANCEL'),
               ),
-              const SizedBox(height: 16),
-              DropdownButton<CategoryType>(
-                value: selectedType,
-                isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: CategoryType.expense, child: Text('Expense')),
-                  DropdownMenuItem(value: CategoryType.income, child: Text('Income')),
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => selectedType = val);
+              ElevatedButton(
+                onPressed: () {
+                  if (nameController.text.trim().isNotEmpty) {
+                    ref.read(categoriesControllerProvider.notifier).addCategory(
+                      nameController.text.trim(),
+                      selectedType,
+                    );
+                    Navigator.pop(context);
+                  }
                 },
+                child: const Text('ADD'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  ref.read(categoriesControllerProvider.notifier).addCategory(
-                    nameController.text,
-                    selectedType,
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('ADD'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

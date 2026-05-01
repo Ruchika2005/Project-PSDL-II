@@ -48,7 +48,10 @@ class AuthController extends Notifier<bool> {
               content: const Text('Your account has been created successfully. Please login to continue.'),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context); // Go back to login screen
+                  },
                   child: const Text('OK'),
                 ),
               ],
@@ -114,6 +117,8 @@ class AuthController extends Notifier<bool> {
             onPressed: () {
               Navigator.pop(context);
               signOut();
+              // Clear the navigation stack to ensure we go back to AuthChecker's LoginScreen
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: const Text('LOGOUT', style: TextStyle(color: Colors.white)),
           ),

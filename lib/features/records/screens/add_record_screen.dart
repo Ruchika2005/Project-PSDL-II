@@ -131,7 +131,16 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
                   value: selectedCategoryId,
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: relevantCategories.map((c) {
-                    return DropdownMenuItem(value: c.id, child: Text(c.name));
+                    return DropdownMenuItem(
+                      value: c.id, 
+                      child: Row(
+                        children: [
+                          Icon(c.icon, color: c.color, size: 20),
+                          const SizedBox(width: 12),
+                          Text(c.name),
+                        ],
+                      ),
+                    );
                   }).toList(),
                   onChanged: (value) => setState(() => selectedCategoryId = value),
                 );
