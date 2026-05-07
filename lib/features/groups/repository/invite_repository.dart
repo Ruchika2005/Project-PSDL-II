@@ -44,7 +44,7 @@ class InviteRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => InviteModel.fromMap(doc.data()))
-            .where((invite) => invite.status != InviteStatus.rejected && invite.status != InviteStatus.settled)
+            .where((invite) => invite.status == InviteStatus.pending)
             .toList());
   }
 
@@ -55,7 +55,7 @@ class InviteRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => InviteModel.fromMap(doc.data()))
-            .where((invite) => invite.status != InviteStatus.rejected && invite.status != InviteStatus.settled)
+            .where((invite) => invite.status == InviteStatus.pending)
             .toList());
   }
 
@@ -66,7 +66,7 @@ class InviteRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => InviteModel.fromMap(doc.data()))
-            .where((i) => i.status != InviteStatus.rejected && i.status != InviteStatus.settled)
+            .where((i) => i.status == InviteStatus.pending)
             .toList());
   }
 
