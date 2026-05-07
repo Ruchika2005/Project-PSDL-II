@@ -9,6 +9,9 @@ import '../../analysis/screens/analysis_screen.dart'; // Analysis Screen
 import '../../budgets/screens/budgets_screen.dart'; // Budgets Screen
 import '../../finance/controller/finance_controller.dart';
 import '../../auth/controller/auth_controller.dart';
+import '../../auth/screens/profile_screen.dart';
+import '../../groups/controller/group_controller.dart';
+import '../../../core/constants/app_colors.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -43,6 +46,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_currentIndex == 0 ? 'Split It' : _currentIndex == 1 ? 'Analysis' : _currentIndex == 2 ? 'Budgets' : _currentIndex == 3 ? 'Accounts' : _currentIndex == 4 ? 'Categories' : 'Groups'),
+        elevation: 0,
+      ),
+      drawer: _buildDrawer(context, ref),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -51,6 +59,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             _currentIndex = index;
           });
         },
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Records'),
           BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Analysis'),
@@ -58,6 +69,55 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.credit_card), label: 'Accounts'),
           BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Categories'),
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Groups'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
+
+    return Drawer(
+      child: Column(
+        children: [
+          userAsync.when(
+            data: (user) => UserAccountsDrawerHeader(
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Text(
+                  user?.name[0].toUpperCase() ?? 'U',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+              ),
+              accountName: Text(user?.name ?? 'User'),
+              accountEmail: Text(user?.email ?? ''),
+              decoration: const BoxDecoration(color: AppColors.primary),
+            ),
+            loading: () => const DrawerHeader(child: Center(child: CircularProgressIndicator())),
+            error: (_, __) => const DrawerHeader(child: Center(child: Text('Error'))),
+          ),
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('My Profile'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              ref.read(authControllerProvider.notifier).showLogoutConfirmation(context);
+            },
+          ),
+          const Spacer(),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text('v1.0.0', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ),
         ],
       ),
     );
