@@ -91,13 +91,34 @@ class ExpenseController extends Notifier<bool> {
         ],
         splitType: SplitType.unequal,
         createdAt: DateTime.now(),
+        isVerified: false,
       );
 
       await _expenseRepository.addExpense(expense);
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Marked ₹${amount.toStringAsFixed(2)} as paid to $to')),
+          SnackBar(content: Text('Marked ₹${amount.toStringAsFixed(2)} as paid to $to. Waiting for confirmation.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    state = false;
+  }
+
+  Future<void> verifySettlement({
+    required String expenseId,
+    required BuildContext context,
+  }) async {
+    state = true;
+    try {
+      await _expenseRepository.verifyExpense(expenseId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment verified successfully!')),
         );
       }
     } catch (e) {

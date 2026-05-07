@@ -289,7 +289,10 @@ class _ExpensesTab extends ConsumerWidget {
                                   desc = 'Settlement: $fromName to $toName';
                                 }
                               }
-                              return Text(desc, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18));
+                              return Text(
+                                desc, 
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              );
                             },
                             loading: () => Text(expense.description, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                             error: (_, __) => Text(expense.description, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
@@ -306,8 +309,12 @@ class _ExpensesTab extends ConsumerWidget {
                         const SizedBox(width: 4),
                         Text('Paid by ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                         ref.watch(memberNamesProvider(group)).when(
-                          data: (map) => Text(map[expense.paidBy] ?? expense.paidBy, 
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          data: (map) => Flexible(
+                            child: Text(
+                              map[expense.paidBy] ?? expense.paidBy, 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
                           loading: () => const Text('...', style: TextStyle(fontSize: 13)),
                           error: (_, __) => Text(expense.paidBy, style: const TextStyle(fontSize: 13)),
                         ),
@@ -322,6 +329,51 @@ class _ExpensesTab extends ConsumerWidget {
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
                       ],
                     ),
+                    if (!expense.isVerified) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.pending_actions, size: 16, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Pending verification',
+                                style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            if (expense.splits.any((s) => s.userId == FirebaseAuth.instance.currentUser?.uid))
+                              TextButton(
+                                onPressed: () {
+                                  ref.read(expenseControllerProvider.notifier).verifySettlement(
+                                    expenseId: expense.id,
+                                    context: context,
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                  minimumSize: const Size(0, 30),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                ),
+                                child: const Text('VERIFY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                              )
+                            else
+                              const Text(
+                                'Waiting for recipient...',
+                                style: TextStyle(color: Colors.orange, fontSize: 10, fontStyle: FontStyle.italic),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -466,6 +518,7 @@ class _BalancesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(settlementProvider(group.id));
+    final expensesAsync = ref.watch(groupExpensesProvider(group.id));
 
     if (transactions.isEmpty) {
       return const Center(
@@ -490,43 +543,87 @@ class _BalancesTab extends ConsumerWidget {
                 final fromName = map[tx.from] ?? tx.from;
                 final toName = map[tx.to] ?? tx.to;
                 return Text(
-                  '$toName owes $fromName',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  '$fromName owes $toName',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 );
               },
               loading: () => const Text('Loading names...', style: TextStyle(fontSize: 16)),
               error: (_, __) => Text('${tx.from} pays ${tx.to}', style: const TextStyle(fontSize: 16)),
             ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '₹${tx.amount.toStringAsFixed(0)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.error),
-                ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () {
-                    ref.read(expenseControllerProvider.notifier).settleDebt(
-                          groupId: group.id,
-                          from: tx.from,
-                          to: tx.to,
-                          amount: tx.amount,
-                          context: context,
-                        );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.green.withOpacity(0.5)),
+            subtitle: expensesAsync.maybeWhen(
+              data: (expenses) {
+                final isPending = expenses.any((e) => 
+                  !e.isVerified && 
+                  e.paidBy == tx.from && 
+                  e.splits.any((s) => s.userId == tx.to)
+                );
+
+                if (isPending) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.access_time, size: 12, color: Colors.orange),
+                          SizedBox(width: 4),
+                          Text('WAITING FOR CONFIRMATION', style: TextStyle(color: Colors.orange, fontSize: 9, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ),
-                    child: const Text('DONE/PAID', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+                final isDebtor = tx.from == currentUserUid;
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: isDebtor 
+                    ? GestureDetector(
+                        onTap: () {
+                          ref.read(expenseControllerProvider.notifier).settleDebt(
+                                groupId: group.id,
+                                from: tx.from,
+                                to: tx.to,
+                                amount: tx.amount,
+                                context: context,
+                              );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.green.withOpacity(0.5)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_outline, size: 14, color: Colors.green),
+                              SizedBox(width: 6),
+                              Text('SETTLE NOW', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'Awaiting payment from debtor',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontStyle: FontStyle.italic),
+                      ),
+                );
+              },
+              orElse: () => const SizedBox(),
+            ),
+            trailing: Text(
+              '₹${tx.amount.toStringAsFixed(0)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.error),
             ),
           ),
         );

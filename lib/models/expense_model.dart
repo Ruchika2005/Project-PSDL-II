@@ -30,6 +30,7 @@ class ExpenseModel {
   final List<ExpenseSplit> splits;
   final SplitType splitType;
   final DateTime createdAt;
+  final bool isVerified;
 
   ExpenseModel({
     required this.id,
@@ -40,6 +41,7 @@ class ExpenseModel {
     required this.splits,
     required this.splitType,
     required this.createdAt,
+    this.isVerified = true,
   });
 
   Map<String, dynamic> toMap() {
@@ -52,6 +54,7 @@ class ExpenseModel {
       'splits': splits.map((x) => x.toMap()).toList(),
       'splitType': splitType.name,
       'createdAt': createdAt.millisecondsSinceEpoch,
+      'isVerified': isVerified,
     };
   }
 
@@ -65,6 +68,7 @@ class ExpenseModel {
       splits: List<ExpenseSplit>.from(map['splits']?.map((x) => ExpenseSplit.fromMap(x)) ?? []),
       splitType: SplitType.values.firstWhere((e) => e.name == map['splitType'], orElse: () => SplitType.equal),
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
+      isVerified: map['isVerified'] ?? true,
     );
   }
 }

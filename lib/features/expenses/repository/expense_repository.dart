@@ -13,6 +13,10 @@ class ExpenseRepository {
     await _firestore.collection('expenses').doc(expense.id).set(expense.toMap());
   }
 
+  Future<void> verifyExpense(String expenseId) async {
+    await _firestore.collection('expenses').doc(expenseId).update({'isVerified': true});
+  }
+
   Stream<List<ExpenseModel>> getGroupExpenses(String groupId) {
     return _firestore
         .collection('expenses')

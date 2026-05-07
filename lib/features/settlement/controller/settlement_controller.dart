@@ -11,6 +11,8 @@ final settlementProvider = Provider.family<List<Transaction>, String>((ref, grou
       Map<String, double> balances = {};
       
       for (var expense in expenses) {
+        if (!expense.isVerified) continue; // Only count verified expenses in balances
+        
         // Add full amount to the payer
         balances[expense.paidBy] = (balances[expense.paidBy] ?? 0.0) + expense.amount;
         
