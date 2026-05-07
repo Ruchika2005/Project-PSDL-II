@@ -9,6 +9,7 @@ class InviteModel {
   final String creatorName;
   final String creatorId;
   final String inviteeEmail;
+  final String inviteePhone;
   final String inviteeName;
   final String code;
   final double moneyOwed;
@@ -22,6 +23,7 @@ class InviteModel {
     required this.creatorName,
     required this.creatorId,
     required this.inviteeEmail,
+    this.inviteePhone = '',
     required this.inviteeName,
     required this.code,
     this.moneyOwed = 0.0,
@@ -37,6 +39,7 @@ class InviteModel {
       'creatorName': creatorName,
       'creatorId': creatorId,
       'inviteeEmail': inviteeEmail,
+      'inviteePhone': inviteePhone,
       'inviteeName': inviteeName,
       'code': code,
       'moneyOwed': moneyOwed,
@@ -53,6 +56,7 @@ class InviteModel {
       creatorName: map['creatorName'] ?? '',
       creatorId: map['creatorId'] ?? '',
       inviteeEmail: map['inviteeEmail'] ?? '',
+      inviteePhone: map['inviteePhone'] ?? '',
       inviteeName: map['inviteeName'] ?? '',
       code: map['code'] ?? '',
       moneyOwed: (map['moneyOwed'] ?? 0.0).toDouble(),
@@ -68,6 +72,7 @@ class InviteModel {
     String? creatorName,
     String? creatorId,
     String? inviteeEmail,
+    String? inviteePhone,
     String? inviteeName,
     String? code,
     double? moneyOwed,
@@ -81,6 +86,7 @@ class InviteModel {
       creatorName: creatorName ?? this.creatorName,
       creatorId: creatorId ?? this.creatorId,
       inviteeEmail: inviteeEmail ?? this.inviteeEmail,
+      inviteePhone: inviteePhone ?? this.inviteePhone,
       inviteeName: inviteeName ?? this.inviteeName,
       code: code ?? this.code,
       moneyOwed: moneyOwed ?? this.moneyOwed,

@@ -35,14 +35,14 @@ class BudgetsScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+                      colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
+                        color: AppColors.primary.withOpacity(0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       )
@@ -99,7 +99,7 @@ class BudgetsScreen extends ConsumerWidget {
                                       Row(
                                         children: [
                                           CircleAvatar(
-                                            backgroundColor: category.color.withValues(alpha: 0.2),
+                                            backgroundColor: category.color.withOpacity(0.2),
                                             child: Icon(category.icon, color: category.color),
                                           ),
                                           const SizedBox(width: 12),

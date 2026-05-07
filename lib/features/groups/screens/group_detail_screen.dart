@@ -9,6 +9,8 @@ import '../../settlement/controller/settlement_controller.dart';
 import '../controller/group_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -130,69 +132,111 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
 
   void _showAddMemberDialog(BuildContext context, WidgetRef ref, GroupModel group) {
     final nameController = TextEditingController();
-    final emailController = TextEditingController();
+    final identifierController = TextEditingController(); // Can be email or phone
     final amountController = TextEditingController(text: '0');
     
+    Future<void> pickContact() async {
+      if (await Permission.contacts.request().isGranted) {
+        final contactId = await FlutterContacts.native.showPicker();
+        if (contactId != null) {
+          final contact = await FlutterContacts.get(contactId, properties: ContactProperties.all);
+          if (contact != null) {
+            nameController.text = contact.displayName ?? '';
+            if ((contact.displayName ?? '').isEmpty && (contact.name?.first ?? '').isNotEmpty) {
+               nameController.text = '${contact.name?.first ?? ''} ${contact.name?.last ?? ''}'.trim();
+            }
+            if ((contact.phones ?? []).isNotEmpty) {
+              identifierController.text = contact.phones!.first.number.replaceAll(RegExp(r'\s+'), '');
+            } else if ((contact.emails ?? []).isNotEmpty) {
+              identifierController.text = contact.emails!.first.address;
+            }
+          }
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contact permission denied')));
+        }
+      }
+    }
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Invite New Member'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Member Name',
-                  hintText: 'Friend\'s display name',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Invite New Member'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: pickContact,
+                  icon: const Icon(Icons.contacts),
+                  label: const Text('PICK FROM CONTACTS'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email Address',
-                  hintText: 'Registered app email',
+                const SizedBox(height: 16),
+                const Text('OR ENTER MANUALLY', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Member Name',
+                    hintText: 'Friend\'s display name',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Initial Amount Owed (₹)',
-                  hintText: '0',
-                  helperText: 'Amount they owe you right now',
+                const SizedBox(height: 16),
+                TextField(
+                  controller: identifierController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email or Phone Number',
+                    hintText: 'Registered identifier',
+                    prefixIcon: Icon(Icons.alternate_email),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Initial Amount Owed (₹)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.money),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+            ElevatedButton(
+              onPressed: () {
+                final identifier = identifierController.text.trim();
+                if (nameController.text.trim().isNotEmpty && identifier.isNotEmpty) {
+                  final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
+                  final isEmail = identifier.contains('@');
+                  
+                  ref.read(groupControllerProvider.notifier).inviteMember(
+                        groupId: group.id,
+                        groupName: group.name,
+                        inviteeEmail: isEmail ? identifier : null,
+                        inviteePhone: isEmail ? null : identifier,
+                        inviteeName: nameController.text.trim(),
+                        moneyOwed: amount,
+                        context: context,
+                      );
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter name and identifier')));
+                }
+              },
+              child: const Text('SEND REQUEST'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty && emailController.text.trim().isNotEmpty) {
-                final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
-                ref.read(groupControllerProvider.notifier).inviteMember(
-                      groupId: group.id,
-                      groupName: group.name,
-                      inviteeEmail: emailController.text.trim(),
-                      inviteeName: nameController.text.trim(),
-                      moneyOwed: amount,
-                      context: context,
-                    );
-                Navigator.pop(context);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter both name and email')));
-              }
-            },
-            child: const Text('SEND REQUEST'),
-          ),
-        ],
       ),
     );
   }
@@ -310,15 +354,27 @@ class _MembersTab extends ConsumerWidget {
               return ref.watch(memberNamesProvider(group)).when(
                 data: (map) {
                   final name = map[memberId] ?? memberId;
+                  // In a real app, we would fetch the user model to get phone/email
+                  // For now we assume names are resolved and IDs are available
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: AppColors.primary.withOpacity(0.2),
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
                         child: Text(name[0].toUpperCase(), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                       ),
-                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      trailing: const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Member', style: TextStyle(fontSize: 12)),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: const Text('ACTIVE', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
                     ),
                   );
                 },
@@ -334,27 +390,61 @@ class _MembersTab extends ConsumerWidget {
             if (invites.isEmpty) return const SizedBox();
             return Container(
               padding: const EdgeInsets.all(16),
-              color: AppColors.surface.withOpacity(0.3),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5)),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('PENDING INVITATIONS', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontSize: 12)),
-                  const SizedBox(height: 8),
-                  ...invites.map((invite) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey.withOpacity(0.2),
-                      child: Text(invite.inviteeName[0].toUpperCase(), style: const TextStyle(color: Colors.grey)),
-                    ),
-                    title: Text(invite.inviteeName, style: const TextStyle(color: AppColors.textSecondary)),
-                    subtitle: Text(invite.inviteeEmail, style: const TextStyle(fontSize: 12)),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text('PENDING', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      const Icon(Icons.mail_outline, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 8),
+                      Text('PENDING INVITATIONS (${invites.length})', 
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontSize: 12, letterSpacing: 1.2)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...invites.map((invite) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.orange.withOpacity(0.1),
+                          child: Text(invite.inviteeName[0].toUpperCase(), style: const TextStyle(color: Colors.orange, fontSize: 14)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(invite.inviteeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(invite.inviteeEmail.isNotEmpty ? invite.inviteeEmail : invite.inviteePhone, 
+                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: const Text('INVITED', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                        if (group.createdBy == FirebaseAuth.instance.currentUser?.uid)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                            onPressed: () => ref.read(groupControllerProvider.notifier).cancelInvite(invite.id, context),
+                          ),
+                      ],
                     ),
                   )),
                 ],

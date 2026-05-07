@@ -160,7 +160,7 @@ class AnalysisScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: category.color.withValues(alpha: 0.1),
+                                  color: category.color.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(category.icon, color: category.color, size: 24),
@@ -215,7 +215,7 @@ class AnalysisScreen extends ConsumerWidget {
                               drawVerticalLine: false,
                               horizontalInterval: 250,
                               getDrawingHorizontalLine: (value) => FlLine(
-                                color: AppColors.background.withValues(alpha: 0.2),
+                                color: AppColors.background.withOpacity(0.2),
                                 strokeWidth: 1,
                               ),
                             ),
@@ -270,7 +270,7 @@ class AnalysisScreen extends ConsumerWidget {
                                 dotData: const FlDotData(show: true),
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: lineColor.withValues(alpha: 0.1),
+                                  color: lineColor.withOpacity(0.1),
                                 ),
                               );
                             }).toList(),
@@ -340,7 +340,7 @@ class _AnalysisCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,7 +348,7 @@ class _AnalysisCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -384,7 +384,7 @@ class _Badge extends StatelessWidget {
         border: Border.all(color: color, width: 2),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.3),
+            color: color.withOpacity(0.3),
             offset: const Offset(0, 3),
             blurRadius: 3,
           ),

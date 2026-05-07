@@ -99,7 +99,7 @@ class CategoriesScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CircleAvatar(
-                  backgroundColor: category.color.withValues(alpha: 0.2),
+                  backgroundColor: category.color.withOpacity(0.2),
                   child: Icon(category.icon, color: category.color),
                 ),
                 const SizedBox(height: 8),
@@ -143,7 +143,7 @@ class CategoriesScreen extends ConsumerWidget {
                     const Text('Preview: ', style: TextStyle(color: AppColors.textSecondary)),
                     const SizedBox(width: 12),
                     CircleAvatar(
-                      backgroundColor: suggestedColor.withValues(alpha: 0.2),
+                      backgroundColor: suggestedColor.withOpacity(0.2),
                       child: Icon(suggestedIcon, color: suggestedColor),
                     ),
                     const SizedBox(width: 12),

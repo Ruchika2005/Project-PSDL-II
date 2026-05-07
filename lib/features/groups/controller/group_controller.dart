@@ -12,6 +12,8 @@ import 'dart:math';
 import 'package:split_expense/features/expenses/controller/expense_controller.dart';
 import '../repository/invite_repository.dart';
 import '../../../models/invite_model.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 final groupControllerProvider = NotifierProvider<GroupController, bool>(GroupController.new);
 
@@ -45,10 +47,26 @@ final currentUserProvider = FutureProvider((ref) {
 
 final userInvitesProvider = StreamProvider<List<InviteModel>>((ref) {
   final authState = ref.watch(authStateChangeProvider);
+  final userRepo = ref.watch(userRepositoryProvider);
+  final inviteRepo = ref.watch(inviteRepositoryProvider);
+  
   return authState.when(
     data: (user) {
-      if (user == null || user.email == null) return Stream.value([]);
-      return ref.watch(inviteRepositoryProvider).getInvitesForUser(user.email!);
+      if (user == null) return Stream.value([]);
+      
+      return Stream.fromFuture(userRepo.getUser(user.uid)).asyncExpand((userModel) {
+        if (userModel == null) return Stream.value([]);
+        
+        final emailStream = inviteRepo.getInvitesForUser(userModel.email);
+        final phoneStream = inviteRepo.getInvitesForPhone(userModel.phoneNumber);
+        
+        return Rx.combineLatest2(emailStream, phoneStream, (List<InviteModel> a, List<InviteModel> b) {
+          final combined = [...a, ...b];
+          // Remove duplicates by ID
+          final ids = <String>{};
+          return combined.where((i) => ids.add(i.id)).toList();
+        });
+      });
     },
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),
@@ -136,7 +154,8 @@ class GroupController extends Notifier<bool> {
   Future<void> inviteMember({
     required String groupId,
     required String groupName,
-    required String inviteeEmail,
+    String? inviteeEmail,
+    String? inviteePhone,
     required String inviteeName,
     required double moneyOwed,
     required BuildContext context,
@@ -148,68 +167,86 @@ class GroupController extends Notifier<bool> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) throw Exception('Not logged in');
 
-      // 1. Check if user exists
-      final targetUser = await inviteRepo.findUserByEmail(inviteeEmail);
-      if (targetUser == null) {
-        throw Exception('No user found with email: $inviteeEmail. They must sign up first.');
+      UserModel? targetUser;
+      if (inviteeEmail != null && inviteeEmail.isNotEmpty) {
+        targetUser = await inviteRepo.findUserByEmail(inviteeEmail);
+      } else if (inviteePhone != null && inviteePhone.isNotEmpty) {
+        targetUser = await inviteRepo.findUserByPhoneNumber(inviteePhone);
       }
-
-      // 2. Check if already invited (pending)
-      final existingInvites = await inviteRepo.getInvitesForGroup(groupId).first;
-      final existingInvite = existingInvites.firstWhere(
-        (i) => i.inviteeEmail.toLowerCase() == inviteeEmail.toLowerCase(),
-        orElse: () => InviteModel(
-          id: '', groupId: '', groupName: '', inviteeEmail: '', inviteeName: '', 
-          moneyOwed: 0, creatorName: '', creatorId: '', status: InviteStatus.pending,
-          code: '', createdAt: DateTime.now()
-        ),
-      );
 
       final creatorProfile = await userRepo.getUser(currentUser.uid);
       final creatorName = creatorProfile?.name ?? 'Group Admin';
+      
+      final inviteId = const Uuid().v4();
+      final code = (100000 + Random().nextInt(900000)).toString();
+      
+      final invite = InviteModel(
+        id: inviteId,
+        groupId: groupId,
+        groupName: groupName,
+        creatorName: creatorName,
+        creatorId: currentUser.uid,
+        inviteeEmail: inviteeEmail?.toLowerCase().trim() ?? '',
+        inviteePhone: inviteePhone?.trim() ?? '',
+        inviteeName: inviteeName,
+        code: code,
+        moneyOwed: moneyOwed,
+        createdAt: DateTime.now(),
+        status: InviteStatus.pending,
+      );
 
-      if (existingInvite.id.isNotEmpty) {
-        // Update existing invite
-        final updatedInvite = existingInvite.copyWith(
-          moneyOwed: moneyOwed,
-          inviteeName: inviteeName,
-          creatorName: creatorName,
-        );
-        await inviteRepo.sendInvite(updatedInvite);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invitation amount updated!')));
-        }
-      } else {
-        // Create new invite
-        final inviteId = const Uuid().v4();
-        final code = (100000 + Random().nextInt(900000)).toString();
+      await inviteRepo.sendInvite(invite);
+
+      if (targetUser == null && inviteePhone != null && inviteePhone.isNotEmpty) {
+        // Fallback to WhatsApp/SMS if user not registered
+        final message = 'Hi $inviteeName, I added you to the group "$groupName" on Split Expense Manager. Install the app to join: https://split-expense.page.link/join';
         
-        final invite = InviteModel(
-          id: inviteId,
-          groupId: groupId,
-          groupName: groupName,
-          creatorName: creatorName,
-          creatorId: currentUser.uid,
-          inviteeEmail: inviteeEmail.toLowerCase().trim(),
-          inviteeName: inviteeName,
-          code: code,
-          moneyOwed: moneyOwed,
-          createdAt: DateTime.now(),
-          status: InviteStatus.pending,
-        );
-        await inviteRepo.sendInvite(invite);
-        if (context.mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Invitation Sent!'),
-              content: Text('A request has been sent to $inviteeEmail. They can accept it from their Invites section.'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-              ],
-            ),
-          );
+        // Comprehensive cleaning
+        String formattedPhone = inviteePhone.replaceAll(RegExp(r'\D'), '');
+        
+        // Handle common Indian number formats
+        if (formattedPhone.length == 10) {
+          formattedPhone = '91$formattedPhone';
+        } else if (formattedPhone.length == 11 && formattedPhone.startsWith('0')) {
+          formattedPhone = '91${formattedPhone.substring(1)}';
+        } else if (formattedPhone.length == 12 && formattedPhone.startsWith('91')) {
+          // Already correct
         }
+
+        final whatsappUrl = 'whatsapp://send?phone=$formattedPhone&text=${Uri.encodeComponent(message)}';
+        final waMeUrl = 'https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}';
+        
+        if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+          await launchUrl(Uri.parse(whatsappUrl), mode: LaunchMode.externalApplication);
+        } else if (await canLaunchUrl(Uri.parse(waMeUrl))) {
+          await launchUrl(Uri.parse(waMeUrl), mode: LaunchMode.externalApplication);
+        } else {
+          final smsUrl = 'sms:$inviteePhone?body=${Uri.encodeComponent(message)}';
+          if (await canLaunchUrl(Uri.parse(smsUrl))) {
+            await launchUrl(Uri.parse(smsUrl));
+          }
+        }
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(targetUser != null ? 'Invitation sent!' : 'Invitation sent via WhatsApp/SMS!'))
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    state = false;
+  }
+
+  Future<void> cancelInvite(String inviteId, BuildContext context) async {
+    state = true;
+    try {
+      await ref.read(inviteRepositoryProvider).deleteInvite(inviteId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invitation cancelled.')));
       }
     } catch (e) {
       if (context.mounted) {

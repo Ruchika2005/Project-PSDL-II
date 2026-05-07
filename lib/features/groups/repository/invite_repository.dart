@@ -20,6 +20,19 @@ class InviteRepository {
     return null;
   }
 
+  Future<UserModel?> findUserByPhoneNumber(String phoneNumber) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .where('phoneNumber', isEqualTo: phoneNumber.trim())
+        .limit(1)
+        .get();
+    
+    if (snapshot.docs.isNotEmpty) {
+      return UserModel.fromMap(snapshot.docs.first.data());
+    }
+    return null;
+  }
+
   Future<void> sendInvite(InviteModel invite) async {
     await _firestore.collection('invitations').doc(invite.id).set(invite.toMap());
   }
@@ -28,6 +41,17 @@ class InviteRepository {
     return _firestore
         .collection('invitations')
         .where('inviteeEmail', isEqualTo: email.toLowerCase().trim())
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => InviteModel.fromMap(doc.data()))
+            .where((invite) => invite.status != InviteStatus.rejected && invite.status != InviteStatus.settled)
+            .toList());
+  }
+
+  Stream<List<InviteModel>> getInvitesForPhone(String phoneNumber) {
+    return _firestore
+        .collection('invitations')
+        .where('inviteePhone', isEqualTo: phoneNumber.trim())
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => InviteModel.fromMap(doc.data()))
@@ -62,6 +86,10 @@ class InviteRepository {
       return InviteModel.fromMap(snapshot.docs.first.data());
     }
     return null;
+  }
+
+  Future<void> deleteInvite(String inviteId) async {
+    await _firestore.collection('invitations').doc(inviteId).delete();
   }
 }
 

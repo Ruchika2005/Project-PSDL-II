@@ -105,14 +105,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 48),
                       
-                      // Email Field
+                      // Identifier Field
                       TextFormField(
                         controller: _emailController,
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: InputDecoration(
-                          labelText: 'Email Address',
+                          labelText: 'Email or Phone Number',
                           labelStyle: const TextStyle(color: AppColors.textSecondary),
-                          prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
+                          prefixIcon: const Icon(Icons.login_outlined, color: AppColors.primary),
                           filled: true,
                           fillColor: AppColors.surface,
                           border: OutlineInputBorder(
@@ -128,8 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             borderSide: const BorderSide(color: AppColors.primary, width: 2),
                           ),
                         ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) => value != null && value.contains('@') ? null : 'Enter a valid email',
+                        validator: (value) => value != null && value.isNotEmpty ? null : 'Enter your email or phone number',
                       ),
                       const SizedBox(height: 20),
                       

@@ -38,7 +38,7 @@ class AccountsScreen extends ConsumerWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.5)),
                 ),
                 child: Column(
                   children: [
@@ -58,7 +58,7 @@ class AccountsScreen extends ConsumerWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                          backgroundColor: AppColors.primary.withOpacity(0.2),
                           child: Icon(account.icon, color: AppColors.primary),
                         ),
                         title: Text(account.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),

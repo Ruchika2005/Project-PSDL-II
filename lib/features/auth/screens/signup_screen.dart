@@ -13,6 +13,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -20,6 +21,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -27,10 +29,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void _signup() {
     if (_formKey.currentState!.validate()) {
       ref.read(authControllerProvider.notifier).signUp(
-            _nameController.text.trim(),
-            _emailController.text.trim(),
-            _passwordController.text.trim(),
-            context,
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            phoneNumber: _phoneController.text.trim(),
+            password: _passwordController.text.trim(),
+            context: context,
           );
     }
   }
@@ -146,6 +149,38 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) => value != null && value.contains('@') ? null : 'Enter a valid email',
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Contact Number Field
+                      TextFormField(
+                        controller: _phoneController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: 'Contact Number',
+                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.primary),
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.1)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                          ),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Enter contact number';
+                          if (value.length < 10) return 'Enter a valid 10-digit number';
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       
