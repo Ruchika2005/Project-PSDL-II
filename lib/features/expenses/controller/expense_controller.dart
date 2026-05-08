@@ -36,12 +36,28 @@ class ExpenseController extends Notifier<bool> {
       if (splitType == SplitType.percentage) {
         double totalPercentage = splits.fold(0, (sum, split) => sum + split.amount);
         if ((totalPercentage - 100).abs() > 0.01) {
-          throw Exception('Percentages must add up to 100%');
+          if (context.mounted) {
+            _showValidationError(
+              context, 
+              'Percentage Mismatch', 
+              'The sum of percentages (₹${totalPercentage.toStringAsFixed(1)}%) does not match 100%. Please adjust the values.'
+            );
+          }
+          state = false;
+          return;
         }
       } else if (splitType == SplitType.unequal) {
         double totalSplit = splits.fold(0, (sum, split) => sum + split.amount);
         if ((totalSplit - amount).abs() > 0.01) {
-          throw Exception('Unequal splits must add up to the total amount ($amount)');
+          if (context.mounted) {
+            _showValidationError(
+              context, 
+              'Amount Mismatch', 
+              'The sum of unequal splits (₹${totalSplit.toStringAsFixed(2)}) does not match the total expense amount (₹${amount.toStringAsFixed(2)}). Please adjust the values.'
+            );
+          }
+          state = false;
+          return;
         }
       }
 
@@ -127,5 +143,27 @@ class ExpenseController extends Notifier<bool> {
       }
     }
     state = false;
+  }
+
+  void _showValidationError(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 10),
+            Text(title),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('GOT IT'),
+          ),
+        ],
+      ),
+    );
   }
 }

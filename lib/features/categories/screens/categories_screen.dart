@@ -20,29 +20,28 @@ class CategoriesScreen extends ConsumerWidget {
         return DefaultTabController(
           length: 2,
           child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Categories'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded),
-                  onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
-                  tooltip: 'Logout',
-                ),
-              ],
-              bottom: const TabBar(
-                indicatorColor: AppColors.primary,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondary,
-                tabs: [
-                  Tab(text: 'Expense'),
-                  Tab(text: 'Income'),
-                ],
-              ),
-            ),
-            body: TabBarView(
+            body: Column(
               children: [
-                _buildCategoryList(expenseCategories, ref),
-                _buildCategoryList(incomeCategories, ref),
+                const Material(
+                  color: AppColors.background,
+                  child: TabBar(
+                    indicatorColor: AppColors.primary,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    tabs: [
+                      Tab(text: 'Expense'),
+                      Tab(text: 'Income'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildCategoryList(expenseCategories, ref),
+                      _buildCategoryList(incomeCategories, ref),
+                    ],
+                  ),
+                ),
               ],
             ),
             floatingActionButton: FloatingActionButton(

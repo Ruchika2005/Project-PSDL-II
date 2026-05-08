@@ -16,18 +16,6 @@ class AnalysisScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Spending Analysis'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
       body: recordsAsync.when(
         data: (records) {
           final now = DateTime.now();

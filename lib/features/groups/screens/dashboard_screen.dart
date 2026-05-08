@@ -16,33 +16,6 @@ class DashboardScreen extends ConsumerWidget {
     final groupsAsync = ref.watch(userGroupsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Groups'),
-        actions: [
-          ref.watch(userInvitesProvider).when(
-            data: (invites) => Badge(
-              label: Text(invites.length.toString()),
-              isLabelVisible: invites.isNotEmpty,
-              backgroundColor: AppColors.error,
-              child: IconButton(
-                icon: const Icon(Icons.mail_rounded),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const InvitesScreen()),
-                ),
-                tooltip: 'Invites',
-              ),
-            ),
-            loading: () => const SizedBox(),
-            error: (_, __) => const SizedBox(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
-            tooltip: 'Logout',
-          )
-        ],
-      ),
       body: groupsAsync.when(
         data: (groups) {
           if (groups.isEmpty) {

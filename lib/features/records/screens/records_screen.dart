@@ -15,16 +15,6 @@ class RecordsScreen extends ConsumerWidget {
     final accountsAsync = ref.watch(accountsProvider);
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Records'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
       body: recordsAsync.when(
         data: (records) {
           final accounts = accountsAsync.value ?? [];

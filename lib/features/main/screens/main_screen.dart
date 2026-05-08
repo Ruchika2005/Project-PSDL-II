@@ -11,6 +11,7 @@ import '../../finance/controller/finance_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../auth/screens/profile_screen.dart';
 import '../../groups/controller/group_controller.dart';
+import '../../groups/screens/invites_screen.dart';
 import '../../../core/constants/app_colors.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -47,7 +48,66 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentIndex == 0 ? 'Split It' : _currentIndex == 1 ? 'Analysis' : _currentIndex == 2 ? 'Budgets' : _currentIndex == 3 ? 'Accounts' : _currentIndex == 4 ? 'Categories' : 'Groups'),
+        toolbarHeight: 110,
+        centerTitle: false,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 16.0, left: 4.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'SplitWise+',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _currentIndex == 0 
+                    ? 'Records' 
+                    : _currentIndex == 1 
+                        ? 'Analysis' 
+                        : _currentIndex == 2 
+                            ? 'Budgets' 
+                            : _currentIndex == 3 
+                                ? 'Accounts' 
+                                : _currentIndex == 4 
+                                    ? 'Categories' 
+                                    : 'Groups',
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          if (_currentIndex == 5) // Groups tab
+            ref.watch(userInvitesProvider).when(
+              data: (invites) => Badge(
+                label: Text(invites.length.toString()),
+                isLabelVisible: invites.isNotEmpty,
+                backgroundColor: AppColors.error,
+                child: IconButton(
+                  icon: const Icon(Icons.mail_outline_rounded),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const InvitesScreen()),
+                  ),
+                  tooltip: 'Invites',
+                ),
+              ),
+              loading: () => const SizedBox(),
+              error: (_, __) => const SizedBox(),
+            ),
+          const SizedBox(width: 8),
+        ],
         elevation: 0,
       ),
       drawer: _buildDrawer(context, ref),

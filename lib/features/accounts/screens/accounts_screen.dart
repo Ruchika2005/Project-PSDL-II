@@ -12,16 +12,6 @@ class AccountsScreen extends ConsumerWidget {
     final accountsAsync = ref.watch(accountsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accounts'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
       body: accountsAsync.when(
         data: (accounts) {
           double totalNetWorth = accounts.fold(0, (sum, item) => sum + item.balance);

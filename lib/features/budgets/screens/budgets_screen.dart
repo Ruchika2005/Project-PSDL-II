@@ -15,16 +15,6 @@ class BudgetsScreen extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Monthly Budgets'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
       body: budgets.isEmpty
           ? const Center(child: Text('No budgets set yet. Tap + to set one!'))
           : Column(
