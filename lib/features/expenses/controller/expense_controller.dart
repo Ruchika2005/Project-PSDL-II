@@ -32,7 +32,6 @@ class ExpenseController extends Notifier<bool> {
   }) async {
     state = true;
     try {
-      // Validate based on split type
       if (splitType == SplitType.percentage) {
         double totalPercentage = splits.fold(0, (sum, split) => sum + split.amount);
         if ((totalPercentage - 100).abs() > 0.01) {
@@ -77,6 +76,57 @@ class ExpenseController extends Notifier<bool> {
 
       if (context.mounted) {
         Navigator.pop(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    state = false;
+  }
+
+  Future<void> deleteExpense(String expenseId, BuildContext context) async {
+    state = true;
+    try {
+      await _expenseRepository.deleteExpense(expenseId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expense deleted successfully')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    state = false;
+  }
+
+  Future<void> updateExpense({
+    required ExpenseModel oldExpense,
+    required String newDescription,
+    required double newAmount,
+    required BuildContext context,
+  }) async {
+    state = true;
+    try {
+      List<ExpenseSplit> newSplits = oldExpense.splits;
+      if (oldExpense.amount != newAmount && oldExpense.amount > 0) {
+        double scale = newAmount / oldExpense.amount;
+        newSplits = oldExpense.splits.map((s) => ExpenseSplit(
+          userId: s.userId,
+          amount: s.amount * scale,
+        )).toList();
+      }
+
+      final updatedExpense = oldExpense.copyWith(
+        description: newDescription,
+        amount: newAmount,
+        splits: newSplits,
+      );
+
+      await _expenseRepository.addExpense(updatedExpense);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expense updated successfully')));
       }
     } catch (e) {
       if (context.mounted) {

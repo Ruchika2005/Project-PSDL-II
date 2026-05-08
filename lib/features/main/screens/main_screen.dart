@@ -49,7 +49,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 110,
+        toolbarHeight: 100,
         centerTitle: false,
         title: Padding(
           padding: const EdgeInsets.only(top: 16.0, left: 4.0),
@@ -57,15 +57,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'SplitWise+',
+                'SPLITWISE+',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
                   color: AppColors.primary,
-                  letterSpacing: 2.0,
+                  letterSpacing: 3.0,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
               Text(
                 _currentIndex == 0 
                     ? 'Records' 
@@ -79,10 +79,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                     ? 'Categories' 
                                     : 'Groups',
                 style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
                   color: Theme.of(context).colorScheme.onSurface,
-                  height: 1.0,
+                  height: 1.1,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],

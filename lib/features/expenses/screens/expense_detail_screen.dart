@@ -130,9 +130,10 @@ class ExpenseDetailScreen extends ConsumerWidget {
                 child: Text(
                   'Split Type: ${expense.splitType.name.toUpperCase()}',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.secondary,
-                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(context).colorScheme.primary,
+                    letterSpacing: 1.5,
+                    fontSize: 14,
                   ),
                 ),
               ),

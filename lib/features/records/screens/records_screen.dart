@@ -82,13 +82,50 @@ class RecordsScreen extends ConsumerWidget {
                         ),
                         title: Text(record.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${record.category} • ${record.account}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                        trailing: Text(
-                          '${record.type == RecordType.income ? '+' : '-'}₹${record.amount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: record.type == RecordType.income ? AppColors.success : Theme.of(context).colorScheme.onSurface,
-                          ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${record.type == RecordType.income ? '+' : '-'}₹${record.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: record.type == RecordType.income ? AppColors.success : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 20),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _showEditDialog(context, ref, record);
+                                } else if (value == 'delete') {
+                                  _showDeleteDialog(context, ref, record);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Delete', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -106,6 +143,78 @@ class RecordsScreen extends ConsumerWidget {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const AddRecordScreen()));
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, WidgetRef ref, RecordModel record) {
+    final titleController = TextEditingController(text: record.title);
+    final amountController = TextEditingController(text: record.amount.toStringAsFixed(2));
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Record'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Amount'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newAmount = double.tryParse(amountController.text) ?? 0;
+              if (titleController.text.isNotEmpty && newAmount > 0) {
+                ref.read(recordsControllerProvider.notifier).updateRecord(
+                  oldRecord: record,
+                  newTitle: titleController.text.trim(),
+                  newAmount: newAmount,
+                  context: context,
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('UPDATE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, RecordModel record) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Record'),
+        content: Text('Are you sure you want to delete "${record.title}"? This will also update your account balance.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(recordsControllerProvider.notifier).deleteRecord(record, context);
+            },
+            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

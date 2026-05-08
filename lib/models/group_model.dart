@@ -28,4 +28,18 @@ class GroupModel {
       createdBy: map['createdBy'] ?? '',
     );
   }
+
+  GroupModel copyWith({
+    String? id,
+    String? name,
+    List<String>? members,
+    String? createdBy,
+  }) {
+    return GroupModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      members: members ?? this.members,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
 }

@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../expenses/screens/expense_detail_screen.dart';
+import '../../../models/expense_model.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -308,8 +309,44 @@ class _ExpensesTab extends ConsumerWidget {
                             error: (_, __) => Text(expense.description, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                           ),
                         ),
-                        Text('₹${expense.amount.toStringAsFixed(0)}', 
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.error)),
+                        Row(
+                          children: [
+                            Text('₹${expense.amount.toStringAsFixed(0)}', 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.error)),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 20),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _showEditExpenseDialog(context, ref, expense);
+                                } else if (value == 'delete') {
+                                  _showDeleteExpenseDialog(context, ref, expense);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Delete', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -396,6 +433,72 @@ class _ExpensesTab extends ConsumerWidget {
       error: (e, trace) => Center(child: Text('Error: $e')),
     );
   }
+}
+
+void _showEditExpenseDialog(BuildContext context, WidgetRef ref, ExpenseModel expense) {
+  final descController = TextEditingController(text: expense.description);
+  final amountController = TextEditingController(text: expense.amount.toStringAsFixed(2));
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Edit Expense'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: descController,
+            decoration: const InputDecoration(labelText: 'Description'),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: amountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Amount'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+        ElevatedButton(
+          onPressed: () {
+            final newAmount = double.tryParse(amountController.text) ?? 0;
+            if (descController.text.isNotEmpty && newAmount > 0) {
+              ref.read(expenseControllerProvider.notifier).updateExpense(
+                    oldExpense: expense,
+                    newDescription: descController.text.trim(),
+                    newAmount: newAmount,
+                    context: context,
+                  );
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('UPDATE'),
+        ),
+      ],
+    ),
+  );
+}
+
+void _showDeleteExpenseDialog(BuildContext context, WidgetRef ref, ExpenseModel expense) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Delete Expense'),
+      content: const Text('Are you sure you want to delete this expense?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () {
+            ref.read(expenseControllerProvider.notifier).deleteExpense(expense.id, context);
+            Navigator.pop(context);
+          },
+          child: const Text('DELETE', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
 }
 
 class _MembersTab extends ConsumerWidget {

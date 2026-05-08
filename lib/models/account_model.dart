@@ -30,4 +30,18 @@ class AccountModel {
       icon: IconData(map['icon'] ?? Icons.account_balance.codePoint, fontFamily: 'MaterialIcons'),
     );
   }
+
+  AccountModel copyWith({
+    String? id,
+    String? name,
+    double? balance,
+    IconData? icon,
+  }) {
+    return AccountModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      balance: balance ?? this.balance,
+      icon: icon ?? this.icon,
+    );
+  }
 }

@@ -52,9 +52,46 @@ class AccountsScreen extends ConsumerWidget {
                           child: Icon(account.icon, color: AppColors.primary),
                         ),
                         title: Text(account.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        trailing: Text(
-                          '₹${account.balance.toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.success),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '₹${account.balance.toStringAsFixed(2)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.success),
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 20),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _showEditAccountDialog(context, ref, account);
+                                } else if (value == 'delete') {
+                                  _showDeleteDialog(context, ref, account.id, account.name);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Delete', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -115,6 +152,76 @@ class AccountsScreen extends ConsumerWidget {
               }
             },
             child: const Text('ADD'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditAccountDialog(BuildContext context, WidgetRef ref, dynamic account) {
+    final nameController = TextEditingController(text: account.name);
+    final balanceController = TextEditingController(text: account.balance.toStringAsFixed(2));
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Account Name'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: balanceController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Current Balance'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.isNotEmpty && balanceController.text.isNotEmpty) {
+                ref.read(accountsControllerProvider.notifier).updateAccount(
+                  account.id,
+                  nameController.text,
+                  double.parse(balanceController.text),
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('UPDATE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, String accountId, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: Text('Are you sure you want to delete "$name"? This will also delete all history associated with this account path.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(accountsControllerProvider.notifier).deleteAccount(accountId, context);
+            },
+            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

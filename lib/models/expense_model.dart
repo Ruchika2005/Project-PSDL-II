@@ -71,4 +71,28 @@ class ExpenseModel {
       isVerified: map['isVerified'] ?? true,
     );
   }
+
+  ExpenseModel copyWith({
+    String? id,
+    String? groupId,
+    String? description,
+    double? amount,
+    String? paidBy,
+    List<ExpenseSplit>? splits,
+    SplitType? splitType,
+    DateTime? createdAt,
+    bool? isVerified,
+  }) {
+    return ExpenseModel(
+      id: id ?? this.id,
+      groupId: groupId ?? this.groupId,
+      description: description ?? this.description,
+      amount: amount ?? this.amount,
+      paidBy: paidBy ?? this.paidBy,
+      splits: splits ?? this.splits,
+      splitType: splitType ?? this.splitType,
+      createdAt: createdAt ?? this.createdAt,
+      isVerified: isVerified ?? this.isVerified,
+    );
+  }
 }

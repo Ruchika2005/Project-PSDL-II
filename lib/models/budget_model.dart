@@ -13,11 +13,16 @@ class BudgetModel {
     this.spent = 0,
   });
 
-  BudgetModel copyWith({double? spent}) {
+  BudgetModel copyWith({
+    String? id,
+    String? categoryName,
+    double? limit,
+    double? spent,
+  }) {
     return BudgetModel(
-      id: id,
-      categoryName: categoryName,
-      limit: limit,
+      id: id ?? this.id,
+      categoryName: categoryName ?? this.categoryName,
+      limit: limit ?? this.limit,
       spent: spent ?? this.spent,
     );
   }

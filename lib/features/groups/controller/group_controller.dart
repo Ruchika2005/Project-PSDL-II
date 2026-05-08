@@ -9,7 +9,6 @@ import '../../auth/repository/user_repository.dart';
 import '../../auth/controller/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
-import 'package:split_expense/features/expenses/controller/expense_controller.dart';
 import '../repository/invite_repository.dart';
 import '../../../models/invite_model.dart';
 import 'package:rxdart/rxdart.dart';
@@ -120,11 +119,7 @@ class GroupController extends Notifier<bool> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) throw Exception('User not logged in');
 
-      // Use UID for database integrity, UI will resolve names
       List<String> finalMembers = [currentUser.uid];
-      // memberNames from the dialog are ignored for now as we use the invite system
-      // but if you want to add people by name manually (without IDs), they can stay as names
-      // My name resolver handles both IDs and Names.
       for (var m in memberNames) {
         if (m.trim().isNotEmpty && !finalMembers.contains(m.trim())) {
           finalMembers.add(m.trim());
@@ -200,19 +195,13 @@ class GroupController extends Notifier<bool> {
       await inviteRepo.sendInvite(invite);
       
       if (targetUser == null && normalizedPhone != null && normalizedPhone.isNotEmpty) {
-        // Fallback to WhatsApp/SMS if user not registered
         final message = 'Hi $inviteeName, I added you to the group "$groupName" on Split Expense Manager. Install the app to join: https://split-expense.page.link/join';
         
-        // Use normalized phone for sending message
         String formattedPhone = normalizedPhone.replaceAll(RegExp(r'\D'), '');
-        
-        // Handle common Indian number formats
         if (formattedPhone.length == 10) {
           formattedPhone = '91$formattedPhone';
         } else if (formattedPhone.length == 11 && formattedPhone.startsWith('0')) {
           formattedPhone = '91${formattedPhone.substring(1)}';
-        } else if (formattedPhone.length == 12 && formattedPhone.startsWith('91')) {
-          // Already correct
         }
 
         final whatsappUrl = 'whatsapp://send?phone=$formattedPhone&text=${Uri.encodeComponent(message)}';
@@ -267,7 +256,6 @@ class GroupController extends Notifier<bool> {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser == null) throw Exception('Not logged in');
         
-        // Add member UID to group
         await _groupRepository.addMemberToGroup(invite.groupId, currentUser.uid);
         await inviteRepo.updateInviteStatus(invite.id, InviteStatus.accepted);
         if (context.mounted) {
@@ -291,10 +279,8 @@ class GroupController extends Notifier<bool> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) throw Exception('Not logged in');
 
-      // 1. Update invite status
       await inviteRepo.updateInviteStatus(invite.id, InviteStatus.settled);
 
-      // 2. Create actual settlement in expense records
       await ref.read(expenseControllerProvider.notifier).settleDebt(
             groupId: invite.groupId,
             from: currentUser.uid,
@@ -314,12 +300,31 @@ class GroupController extends Notifier<bool> {
     state = false;
   }
 
+  Future<void> updateGroup(String groupId, String newName, BuildContext context) async {
+    state = true;
+    try {
+      final groups = ref.read(userGroupsProvider).value ?? [];
+      final group = groups.firstWhere((g) => g.id == groupId);
+      final updatedGroup = group.copyWith(name: newName);
+      await _groupRepository.createGroup(updatedGroup); 
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group updated successfully')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+      }
+    }
+    state = false;
+  }
+
   Future<void> deleteGroup(String groupId, BuildContext context) async {
     state = true;
     try {
       await _groupRepository.deleteGroup(groupId);
       if (context.mounted) {
-        Navigator.pop(context); // Go back to dashboard
+        Navigator.pop(context); // Go back if on Detail screen
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group deleted successfully')));
       }
     } catch (e) {

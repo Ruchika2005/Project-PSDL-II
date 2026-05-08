@@ -39,7 +39,38 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   title: Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   subtitle: Text('${group.members.length} members'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showEditGroupDialog(context, ref, group);
+                      } else if (value == 'delete') {
+                        _showDeleteGroupConfirmation(context, ref, group.id, group.name);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -116,6 +147,65 @@ class DashboardScreen extends ConsumerWidget {
               }
             },
             child: const Text('CREATE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditGroupDialog(BuildContext context, WidgetRef ref, dynamic group) {
+    final nameController = TextEditingController(text: group.name);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Group Name'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Group Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                ref.read(groupControllerProvider.notifier).updateGroup(
+                      group.id,
+                      nameController.text.trim(),
+                      context,
+                    );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('UPDATE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteGroupConfirmation(BuildContext context, WidgetRef ref, String groupId, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Group'),
+        content: Text('Are you sure you want to delete the group "$name"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(groupControllerProvider.notifier).deleteGroup(groupId, context);
+            },
+            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

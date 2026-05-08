@@ -54,4 +54,24 @@ class RecordModel {
       account: map['account'] ?? '',
     );
   }
+
+  RecordModel copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    RecordType? type,
+    DateTime? date,
+    String? category,
+    String? account,
+  }) {
+    return RecordModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      date: date ?? this.date,
+      category: category ?? this.category,
+      account: account ?? this.account,
+    );
+  }
 }

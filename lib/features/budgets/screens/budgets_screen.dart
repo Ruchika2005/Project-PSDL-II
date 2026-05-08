@@ -5,6 +5,8 @@ import '../../finance/controller/finance_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/category_model.dart';
+import '../../../models/budget_model.dart';
+import '../../../models/record_model.dart';
 
 class BudgetsScreen extends ConsumerWidget {
   const BudgetsScreen({super.key});
@@ -96,9 +98,17 @@ class BudgetsScreen extends ConsumerWidget {
                                           Text(budget.categoryName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                         ],
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                                        onPressed: () => ref.read(budgetsControllerProvider.notifier).removeBudget(budget.id),
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 20),
+                                            onPressed: () => _showEditBudgetDialog(context, ref, budget),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                                            onPressed: () => _showDeleteBudgetConfirmation(context, ref, budget.id, budget.categoryName),
+                                          ),
+                                        ],
                                       )
                                     ],
                                   ),
@@ -193,6 +203,57 @@ class BudgetsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditBudgetDialog(BuildContext context, WidgetRef ref, BudgetModel budget) {
+    final limitController = TextEditingController(text: budget.limit.toStringAsFixed(0));
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit ${budget.categoryName} Budget'),
+        content: TextField(
+          controller: limitController,
+          decoration: const InputDecoration(labelText: 'New Monthly Limit', prefixText: '₹ '),
+          keyboardType: TextInputType.number,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          ElevatedButton(
+            onPressed: () {
+              final limit = double.tryParse(limitController.text) ?? 0;
+              if (limit > 0) {
+                ref.read(budgetsControllerProvider.notifier).updateBudgetLimit(budget.id, limit);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('UPDATE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteBudgetConfirmation(BuildContext context, WidgetRef ref, String id, String category) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Budget'),
+        content: Text('Are you sure you want to delete the budget for "$category"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              ref.read(budgetsControllerProvider.notifier).removeBudget(id);
+              Navigator.pop(context);
+            },
+            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

@@ -26,6 +26,10 @@ class FinanceRepository {
     await _firestore.collection('users').doc(userId).collection('accounts').doc(accountId).update({'balance': newBalance});
   }
 
+  Future<void> deleteAccount(String userId, String accountId) async {
+    await _firestore.collection('users').doc(userId).collection('accounts').doc(accountId).delete();
+  }
+
   // --- CATEGORIES ---
   Stream<List<CategoryModel>> getCategories(String userId) {
     return _firestore
@@ -57,6 +61,10 @@ class FinanceRepository {
 
   Future<void> addRecord(String userId, RecordModel record) async {
     await _firestore.collection('users').doc(userId).collection('records').doc(record.id).set(record.toMap());
+  }
+
+  Future<void> deleteRecord(String userId, String recordId) async {
+    await _firestore.collection('users').doc(userId).collection('records').doc(recordId).delete();
   }
 
   Future<void> deleteAllUserData(String userId) async {

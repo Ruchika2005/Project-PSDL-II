@@ -25,4 +25,8 @@ class ExpenseRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => ExpenseModel.fromMap(doc.data())).toList());
   }
+
+  Future<void> deleteExpense(String expenseId) async {
+    await _firestore.collection('expenses').doc(expenseId).delete();
+  }
 }

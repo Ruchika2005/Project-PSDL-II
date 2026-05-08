@@ -37,6 +37,16 @@ class BudgetsController extends Notifier<bool> {
     await _repo.addBudget(userId, budget);
   }
 
+  Future<void> updateBudgetLimit(String id, double limit) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final budgets = ref.read(budgetsProvider).value ?? [];
+    final budget = budgets.firstWhere((b) => b.id == id);
+    final updatedBudget = budget.copyWith(limit: limit);
+    await _repo.addBudget(userId, updatedBudget); // Overwrites since same ID
+  }
+
   Future<void> removeBudget(String id) async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;

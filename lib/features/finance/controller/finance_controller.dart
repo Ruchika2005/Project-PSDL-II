@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/account_model.dart';
 import '../../../models/category_model.dart';
 import '../../../models/record_model.dart';
-import '../../../models/budget_model.dart';
 import 'package:uuid/uuid.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/controller/auth_controller.dart';
-import '../../budgets/controller/budget_controller.dart';
 import '../../budgets/repository/budget_repository.dart';
 import '../repository/finance_repository.dart';
 
@@ -79,7 +75,7 @@ class AccountsController extends Notifier<bool> {
     if (userId == null) return;
 
     final accounts = ref.read(accountsProvider).value;
-    if (accounts == null) return; // Should not happen as we watch it in UI
+    if (accounts == null) return;
     
     final acc = accounts.firstWhere((a) => a.id == accountId);
     double newBalance = type == RecordType.income ? acc.balance + amount : acc.balance - amount;
@@ -91,11 +87,45 @@ class AccountsController extends Notifier<bool> {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
     
-    final accounts = await ref.read(accountsProvider.future);
-    if (accounts.isEmpty) {
+    final currentAccounts = ref.read(accountsProvider).value ?? [];
+    if (currentAccounts.isEmpty) {
       await addAccount('Cash', 0);
       await addAccount('Bank', 0);
     }
+  }
+
+  Future<void> deleteAccount(String accountId, BuildContext context) async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+      
+      final accounts = ref.read(accountsProvider).value ?? [];
+      if (accounts.length <= 1) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot delete the only remaining account.')));
+        }
+        return;
+      }
+
+      await _repo.deleteAccount(userId, accountId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account deleted successfully')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      }
+    }
+  }
+
+  Future<void> updateAccount(String accountId, String newName, double newBalance) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final accounts = ref.read(accountsProvider).value ?? [];
+    final account = accounts.firstWhere((a) => a.id == accountId);
+    final updatedAccount = account.copyWith(name: newName, balance: newBalance);
+    await _repo.addAccount(userId, updatedAccount);
   }
 }
 
@@ -188,7 +218,6 @@ class RecordsController extends Notifier<bool> {
       final category = categories.firstWhere((c) => c.id == categoryId, orElse: () => throw Exception('Category not found'));
       final account = accounts.firstWhere((a) => a.id == accountId, orElse: () => throw Exception('Account not found'));
 
-      // Check for insufficient balance if it's an expense
       if (type == RecordType.expense && account.balance < amount) {
         if (context.mounted) {
           showDialog(
@@ -197,10 +226,7 @@ class RecordsController extends Notifier<bool> {
               title: const Text('Insufficient Balance'),
               content: Text('You do not have enough balance in ${account.name}.\n\nCurrent Balance: ₹${account.balance.toStringAsFixed(2)}\nExpense Amount: ₹${amount.toStringAsFixed(2)}'),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
               ],
             ),
           );
@@ -222,31 +248,19 @@ class RecordsController extends Notifier<bool> {
       await _repo.addRecord(userId, record);
       await ref.read(accountsControllerProvider.notifier).updateBalance(accountId, amount, type);
       
-      // Update Budget spent field in Firestore
       if (type == RecordType.expense) {
         try {
-          final userId = FirebaseAuth.instance.currentUser?.uid;
-          if (userId != null) {
-            // Fetch latest budgets directly from repo to be 100% sure
-            final budgets = await ref.read(budgetRepositoryProvider).getBudgets(userId).first;
-            
-            final now = DateTime.now();
-            final recordDate = date ?? now;
-            final budget = budgets.where((b) => b.categoryName.toLowerCase() == category.name.toLowerCase()).firstOrNull;
-            
-            // ONLY update the Firestore spent field if the record is for the CURRENT month/year
-            if (budget != null && recordDate.month == now.month && recordDate.year == now.year) {
-              final newSpent = (budget.spent) + amount;
-              await ref.read(budgetRepositoryProvider).updateBudgetSpent(userId, budget.id, newSpent);
-              debugPrint('SUCCESS: Current month budget updated in Firestore for ${category.name}. New Spent: $newSpent');
-            } else if (budget != null) {
-              debugPrint('INFO: Past/Future month record added. Not updating current month budget in Firestore.');
-            } else {
-              debugPrint('INFO: No budget found for category: ${category.name}');
-            }
+          final budgets = await ref.read(budgetRepositoryProvider).getBudgets(userId).first;
+          final now = DateTime.now();
+          final recordDate = date ?? now;
+          final budget = budgets.where((b) => b.categoryName.toLowerCase() == category.name.toLowerCase()).firstOrNull;
+          
+          if (budget != null && recordDate.month == now.month && recordDate.year == now.year) {
+            final newSpent = (budget.spent) + amount;
+            await ref.read(budgetRepositoryProvider).updateBudgetSpent(userId, budget.id, newSpent);
           }
         } catch (e) {
-          debugPrint('ERROR: Budget sync failed: $e');
+          debugPrint('Budget sync failed: $e');
         }
       }
       
@@ -255,19 +269,96 @@ class RecordsController extends Notifier<bool> {
       }
     } catch (e) {
       if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Error'),
-            content: Text(e.toString()),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    state = false;
+  }
+
+  Future<void> updateRecord({
+    required RecordModel oldRecord,
+    required String newTitle,
+    required double newAmount,
+    required BuildContext context,
+  }) async {
+    state = true;
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      final accounts = ref.read(accountsProvider).value ?? [];
+      final account = accounts.firstWhere((a) => a.name == oldRecord.account, orElse: () => throw Exception('Account not found'));
+
+      final reverseType = oldRecord.type == RecordType.income ? RecordType.expense : RecordType.income;
+      await ref.read(accountsControllerProvider.notifier).updateBalance(account.id, oldRecord.amount, reverseType);
+
+      if (oldRecord.type == RecordType.expense) {
+        final budgets = await ref.read(budgetRepositoryProvider).getBudgets(userId).first;
+        final now = DateTime.now();
+        final budget = budgets.where((b) => b.categoryName.toLowerCase() == oldRecord.category.toLowerCase()).firstOrNull;
+        if (budget != null && oldRecord.date.month == now.month && oldRecord.date.year == now.year) {
+          final newSpent = budget.spent - oldRecord.amount;
+          await ref.read(budgetRepositoryProvider).updateBudgetSpent(userId, budget.id, newSpent < 0 ? 0 : newSpent);
+        }
+      }
+
+      await ref.read(accountsControllerProvider.notifier).updateBalance(account.id, newAmount, oldRecord.type);
+
+      if (oldRecord.type == RecordType.expense) {
+        final budgets = await ref.read(budgetRepositoryProvider).getBudgets(userId).first;
+        final now = DateTime.now();
+        final budget = budgets.where((b) => b.categoryName.toLowerCase() == oldRecord.category.toLowerCase()).firstOrNull;
+        if (budget != null && oldRecord.date.month == now.month && oldRecord.date.year == now.year) {
+          final newSpent = budget.spent + newAmount;
+          await ref.read(budgetRepositoryProvider).updateBudgetSpent(userId, budget.id, newSpent);
+        }
+      }
+
+      final updatedRecord = oldRecord.copyWith(title: newTitle, amount: newAmount);
+      await _repo.addRecord(userId, updatedRecord); 
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Record updated successfully')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+      }
+    }
+    state = false;
+  }
+
+  Future<void> deleteRecord(RecordModel record, BuildContext context) async {
+    state = true;
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      final accounts = ref.read(accountsProvider).value ?? [];
+      final account = accounts.firstWhere((a) => a.name == record.account, orElse: () => throw Exception('Account not found'));
+
+      final reverseType = record.type == RecordType.income ? RecordType.expense : RecordType.income;
+      await ref.read(accountsControllerProvider.notifier).updateBalance(account.id, record.amount, reverseType);
+
+      if (record.type == RecordType.expense) {
+        final budgets = await ref.read(budgetRepositoryProvider).getBudgets(userId).first;
+        final now = DateTime.now();
+        final budget = budgets.where((b) => b.categoryName.toLowerCase() == record.category.toLowerCase()).firstOrNull;
+        
+        if (budget != null && record.date.month == now.month && record.date.year == now.year) {
+          final newSpent = budget.spent - record.amount;
+          await ref.read(budgetRepositoryProvider).updateBudgetSpent(userId, budget.id, newSpent < 0 ? 0 : newSpent);
+        }
+      }
+
+      await _repo.deleteRecord(userId, record.id);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Record deleted successfully')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
       }
     }
     state = false;
@@ -280,8 +371,6 @@ class RecordsController extends Notifier<bool> {
       if (userId == null) return;
 
       await _repo.deleteAllUserData(userId);
-      
-      // Re-initialize default data
       await ref.read(accountsControllerProvider.notifier).ensureDefaultAccounts();
       await ref.read(categoriesControllerProvider.notifier).ensureDefaultCategories();
 
