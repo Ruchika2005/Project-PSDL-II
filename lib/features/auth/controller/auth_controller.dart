@@ -5,6 +5,7 @@ import '../repository/auth_repository.dart';
 import '../repository/user_repository.dart';
 import '../../../models/user_model.dart';
 import '../../../core/services/fcm_service.dart';
+import '../../../core/utils/phone_utils.dart';
 
 final authControllerProvider = NotifierProvider<AuthController, bool>(AuthController.new);
 
@@ -35,6 +36,7 @@ class AuthController extends Notifier<bool> {
   }) async {
     state = true;
     try {
+      final normalizedPhone = PhoneUtils.normalizePhoneNumber(phoneNumber);
       // Check for duplicate email/phone
       final existingEmail = await _userRepository.getUserByEmail(email);
       if (existingEmail != null) {
@@ -42,7 +44,7 @@ class AuthController extends Notifier<bool> {
         state = false;
         return;
       }
-      final existingPhone = await _userRepository.getUserByPhoneNumber(phoneNumber);
+      final existingPhone = await _userRepository.getUserByPhoneNumber(normalizedPhone);
       if (existingPhone != null) {
         if (context.mounted) _showErrorDialog(context, 'Signup Failed', 'This phone number is already registered.');
         state = false;
@@ -56,7 +58,7 @@ class AuthController extends Notifier<bool> {
           id: userCred.user!.uid,
           name: name,
           email: email,
-          phoneNumber: phoneNumber,
+          phoneNumber: normalizedPhone,
           createdAt: DateTime.now(),
           fcmToken: fcmToken,
         );
@@ -100,9 +102,10 @@ class AuthController extends Notifier<bool> {
       String email = identifier;
       // Simple check if it's a phone number (contains only digits and maybe +)
       if (!identifier.contains('@')) {
-        final user = await _userRepository.getUserByPhoneNumber(identifier);
+        final normalizedPhone = PhoneUtils.normalizePhoneNumber(identifier);
+        final user = await _userRepository.getUserByPhoneNumber(normalizedPhone);
         if (user == null) {
-          if (context.mounted) _showErrorDialog(context, 'Login Failed', 'No user found with this phone number.');
+          if (context.mounted) _showErrorDialog(context, 'Login Failed', 'No user found with this phone number ($normalizedPhone).');
           state = false;
           return;
         }

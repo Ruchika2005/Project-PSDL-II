@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/user_model.dart';
+import '../../../core/utils/phone_utils.dart';
 
 final userRepositoryProvider = Provider((ref) => UserRepository(FirebaseFirestore.instance));
 
@@ -39,7 +40,8 @@ class UserRepository {
   }
 
   Future<UserModel?> getUserByPhoneNumber(String phoneNumber) async {
-    final query = await _firestore.collection('users').where('phoneNumber', isEqualTo: phoneNumber.trim()).limit(1).get();
+    final normalizedPhone = PhoneUtils.normalizePhoneNumber(phoneNumber);
+    final query = await _firestore.collection('users').where('phoneNumber', isEqualTo: normalizedPhone).limit(1).get();
     if (query.docs.isNotEmpty) {
       return UserModel.fromMap(query.docs.first.data());
     }

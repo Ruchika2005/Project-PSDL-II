@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/invite_model.dart';
 import '../../../models/user_model.dart';
+import '../../../core/utils/phone_utils.dart';
 
 class InviteRepository {
   final FirebaseFirestore _firestore;
@@ -21,9 +22,10 @@ class InviteRepository {
   }
 
   Future<UserModel?> findUserByPhoneNumber(String phoneNumber) async {
+    final normalizedPhone = PhoneUtils.normalizePhoneNumber(phoneNumber);
     final snapshot = await _firestore
         .collection('users')
-        .where('phoneNumber', isEqualTo: phoneNumber.trim())
+        .where('phoneNumber', isEqualTo: normalizedPhone)
         .limit(1)
         .get();
     
@@ -49,9 +51,10 @@ class InviteRepository {
   }
 
   Stream<List<InviteModel>> getInvitesForPhone(String phoneNumber) {
+    final normalizedPhone = PhoneUtils.normalizePhoneNumber(phoneNumber);
     return _firestore
         .collection('invitations')
-        .where('inviteePhone', isEqualTo: phoneNumber.trim())
+        .where('inviteePhone', isEqualTo: normalizedPhone)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => InviteModel.fromMap(doc.data()))

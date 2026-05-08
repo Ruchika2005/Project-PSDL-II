@@ -14,6 +14,7 @@ import '../repository/invite_repository.dart';
 import '../../../models/invite_model.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/phone_utils.dart';
 
 final groupControllerProvider = NotifierProvider<GroupController, bool>(GroupController.new);
 
@@ -162,6 +163,7 @@ class GroupController extends Notifier<bool> {
   }) async {
     state = true;
     try {
+      final normalizedPhone = inviteePhone != null ? PhoneUtils.normalizePhoneNumber(inviteePhone) : null;
       final inviteRepo = ref.read(inviteRepositoryProvider);
       final userRepo = ref.read(userRepositoryProvider);
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -170,8 +172,8 @@ class GroupController extends Notifier<bool> {
       UserModel? targetUser;
       if (inviteeEmail != null && inviteeEmail.isNotEmpty) {
         targetUser = await inviteRepo.findUserByEmail(inviteeEmail);
-      } else if (inviteePhone != null && inviteePhone.isNotEmpty) {
-        targetUser = await inviteRepo.findUserByPhoneNumber(inviteePhone);
+      } else if (normalizedPhone != null && normalizedPhone.isNotEmpty) {
+        targetUser = await inviteRepo.findUserByPhoneNumber(normalizedPhone);
       }
 
       final creatorProfile = await userRepo.getUser(currentUser.uid);
@@ -187,7 +189,7 @@ class GroupController extends Notifier<bool> {
         creatorName: creatorName,
         creatorId: currentUser.uid,
         inviteeEmail: inviteeEmail?.toLowerCase().trim() ?? '',
-        inviteePhone: inviteePhone?.trim() ?? '',
+        inviteePhone: normalizedPhone ?? '',
         inviteeName: inviteeName,
         code: code,
         moneyOwed: moneyOwed,
@@ -196,13 +198,13 @@ class GroupController extends Notifier<bool> {
       );
 
       await inviteRepo.sendInvite(invite);
-
-      if (targetUser == null && inviteePhone != null && inviteePhone.isNotEmpty) {
+      
+      if (targetUser == null && normalizedPhone != null && normalizedPhone.isNotEmpty) {
         // Fallback to WhatsApp/SMS if user not registered
         final message = 'Hi $inviteeName, I added you to the group "$groupName" on Split Expense Manager. Install the app to join: https://split-expense.page.link/join';
         
-        // Comprehensive cleaning
-        String formattedPhone = inviteePhone.replaceAll(RegExp(r'\D'), '');
+        // Use normalized phone for sending message
+        String formattedPhone = normalizedPhone.replaceAll(RegExp(r'\D'), '');
         
         // Handle common Indian number formats
         if (formattedPhone.length == 10) {
@@ -221,7 +223,7 @@ class GroupController extends Notifier<bool> {
         } else if (await canLaunchUrl(Uri.parse(waMeUrl))) {
           await launchUrl(Uri.parse(waMeUrl), mode: LaunchMode.externalApplication);
         } else {
-          final smsUrl = 'sms:$inviteePhone?body=${Uri.encodeComponent(message)}';
+          final smsUrl = 'sms:$normalizedPhone?body=${Uri.encodeComponent(message)}';
           if (await canLaunchUrl(Uri.parse(smsUrl))) {
             await launchUrl(Uri.parse(smsUrl));
           }
