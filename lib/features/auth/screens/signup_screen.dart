@@ -78,7 +78,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Join SplitWise+',
+                        'Join ExpenseFlow',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,

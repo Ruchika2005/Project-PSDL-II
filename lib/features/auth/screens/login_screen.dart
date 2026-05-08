@@ -85,7 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'SplitWise+',
+                        'ExpenseFlow',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,

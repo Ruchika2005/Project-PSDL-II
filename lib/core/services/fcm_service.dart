@@ -32,8 +32,8 @@ class FCMService {
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'split_expense_channel',
-      'Split Expense Notifications',
+      'expenseflow_channel',
+      'ExpenseFlow Notifications',
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -48,8 +48,8 @@ class FCMService {
 
   Future<void> showLocalNotification(String title, String body) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'split_expense_channel',
-      'Split Expense Notifications',
+      'expenseflow_channel',
+      'ExpenseFlow Notifications',
       importance: Importance.max,
       priority: Priority.high,
     );
