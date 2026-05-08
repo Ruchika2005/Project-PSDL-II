@@ -34,15 +34,15 @@ final groupStreamProvider = StreamProvider.family<GroupModel, String>((ref, grou
   return ref.watch(groupRepositoryProvider).getGroup(groupId);
 });
 
-final currentUserProvider = FutureProvider((ref) {
+final currentUserProvider = StreamProvider<UserModel?>((ref) {
   final authState = ref.watch(authStateChangeProvider);
   return authState.when(
     data: (user) {
-      if (user == null) return null;
-      return ref.watch(userRepositoryProvider).getUser(user.uid);
+      if (user == null) return Stream.value(null);
+      return ref.watch(userRepositoryProvider).getUserStream(user.uid);
     },
-    loading: () => null,
-    error: (_, __) => null,
+    loading: () => Stream.value(null),
+    error: (_, __) => Stream.value(null),
   );
 });
 

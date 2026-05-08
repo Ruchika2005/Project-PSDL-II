@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'features/auth/screens/auth_checker.dart';
 import 'firebase_options.dart';
 import 'core/services/fcm_service.dart';
@@ -46,10 +47,14 @@ class MyApp extends ConsumerWidget {
       }
     });
 
+    final themeMode = ref.watch(themeControllerProvider);
+
     return MaterialApp(
       title: 'SplitExpense',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       home: const AuthChecker(),
     );
   }

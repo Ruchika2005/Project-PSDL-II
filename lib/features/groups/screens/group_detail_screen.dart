@@ -11,6 +11,7 @@ import '../../auth/controller/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../expenses/screens/expense_detail_screen.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -83,9 +84,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
           ],
           bottom: TabBar(
             controller: _tabController,
-            indicatorColor: AppColors.primary,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            labelColor: Theme.of(context).colorScheme.primary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
             tabs: const [
               Tab(text: 'Expenses'),
               Tab(text: 'Balances'),
@@ -178,7 +179,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('OR ENTER MANUALLY', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                const Text('OR ENTER MANUALLY', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
@@ -253,7 +254,7 @@ class _ExpensesTab extends ConsumerWidget {
     return expensesAsync.when(
       data: (expenses) {
         if (expenses.isEmpty) {
-          return const Center(child: Text('No expenses yet.', style: TextStyle(color: AppColors.textSecondary)));
+          return Center(child: Text('No expenses yet.', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)));
         }
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -262,12 +263,21 @@ class _ExpensesTab extends ConsumerWidget {
             final expense = expenses[index];
             final splitCount = expense.splits.length;
             
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ExpenseDetailScreen(expense: expense, group: group),
+                  ),
+                );
+              },
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 16),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: AppColors.surface.withOpacity(0.5)),
+                side: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -307,7 +317,7 @@ class _ExpensesTab extends ConsumerWidget {
                       children: [
                         const Icon(Icons.person_pin, size: 16, color: AppColors.primary),
                         const SizedBox(width: 4),
-                        Text('Paid by ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                        Text('Paid by ', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
                         ref.watch(memberNamesProvider(group)).when(
                           data: (map) => Flexible(
                             child: Text(
@@ -323,10 +333,10 @@ class _ExpensesTab extends ConsumerWidget {
                     const Divider(height: 24),
                     Row(
                       children: [
-                        const Icon(Icons.groups_outlined, size: 16, color: AppColors.textSecondary),
+                        Icon(Icons.groups_outlined, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 8),
                         Text('Split between $splitCount people', 
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w500)),
                       ],
                     ),
                     if (!expense.isVerified) ...[
@@ -377,8 +387,9 @@ class _ExpensesTab extends ConsumerWidget {
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          );
+        },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -455,10 +466,10 @@ class _MembersTab extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.mail_outline, size: 16, color: AppColors.textSecondary),
+                      Icon(Icons.mail_outline, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 8),
                       Text('PENDING INVITATIONS (${invites.length})', 
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontSize: 12, letterSpacing: 1.2)),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12, letterSpacing: 1.2)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -521,8 +532,8 @@ class _BalancesTab extends ConsumerWidget {
     final expensesAsync = ref.watch(groupExpensesProvider(group.id));
 
     if (transactions.isEmpty) {
-      return const Center(
-        child: Text('All balances are settled up! 🎉', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
+      return Center(
+        child: Text('All balances are settled up! 🎉', style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       );
     }
 
@@ -615,7 +626,7 @@ class _BalancesTab extends ConsumerWidget {
                       )
                     : Text(
                         'Awaiting payment from debtor',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontStyle: FontStyle.italic),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10, fontStyle: FontStyle.italic),
                       ),
                 );
               },

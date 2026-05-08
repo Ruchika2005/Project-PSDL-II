@@ -30,15 +30,15 @@ class RecordsScreen extends ConsumerWidget {
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary,
+                  color: Theme.of(context).colorScheme.secondary,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1),
                 ),
                 child: Column(
                   children: [
-                    const Text('Total Balance', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                    Text('Total Balance', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16)),
                     const SizedBox(height: 8),
-                    Text('₹${totalBalance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    Text('₹${totalBalance.toStringAsFixed(2)}', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -46,14 +46,14 @@ class RecordsScreen extends ConsumerWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Income', style: TextStyle(color: AppColors.textSecondary)),
+                            Text('Income', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             Text('+₹${totalIncome.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 16)),
                           ],
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            const Text('Expense', style: TextStyle(color: AppColors.textSecondary)),
+                            Text('Expense', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             Text('-₹${totalExpense.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 16)),
                           ],
                         ),
@@ -81,13 +81,13 @@ class RecordsScreen extends ConsumerWidget {
                           ),
                         ),
                         title: Text(record.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${record.category} • ${record.account}', style: const TextStyle(color: AppColors.textSecondary)),
+                        subtitle: Text('${record.category} • ${record.account}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         trailing: Text(
                           '${record.type == RecordType.income ? '+' : '-'}₹${record.amount.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: record.type == RecordType.income ? AppColors.success : AppColors.textPrimary,
+                            color: record.type == RecordType.income ? AppColors.success : Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),

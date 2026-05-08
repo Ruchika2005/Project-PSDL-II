@@ -159,6 +159,19 @@ class AuthController extends Notifier<bool> {
     );
   }
 
+  Future<void> updateProfilePhoto(String photoPath, BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      state = true;
+      try {
+        await _userRepository.updateProfilePhoto(user.uid, photoPath);
+      } catch (e) {
+        if (context.mounted) _showErrorDialog(context, 'Update Failed', e.toString());
+      }
+      state = false;
+    }
+  }
+
   void _showErrorDialog(BuildContext context, String title, String message) {
     showDialog(
       context: context,

@@ -38,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = ref.watch(authControllerProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Decorative Background Gradient
@@ -84,22 +84,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.primary,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'SplitWise+',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: 1.2,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Manage expenses, split the joy.',
                         style: TextStyle(
                           fontSize: 16,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -108,13 +108,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       // Identifier Field
                       TextFormField(
                         controller: _emailController,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Email or Phone Number',
-                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           prefixIcon: const Icon(Icons.login_outlined, color: AppColors.primary),
                           filled: true,
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -135,13 +135,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       // Password Field
                       TextFormField(
                         controller: _passwordController,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                           filled: true,
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,

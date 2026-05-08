@@ -57,4 +57,8 @@ class UserRepository {
   Future<void> updateFcmToken(String uid, String token) async {
     await _firestore.collection('users').doc(uid).update({'fcmToken': token});
   }
+
+  Future<void> updateProfilePhoto(String uid, String photoUrl) async {
+    await _firestore.collection('users').doc(uid).update({'profilePhoto': photoUrl});
+  }
 }

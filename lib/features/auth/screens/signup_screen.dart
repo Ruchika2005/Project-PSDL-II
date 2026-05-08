@@ -43,12 +43,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final isLoading = ref.watch(authControllerProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -77,21 +77,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         'Join SplitWise+',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Start splitting expenses with ease.',
                         style: TextStyle(
                           fontSize: 16,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -100,13 +100,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       // Name Field
                       TextFormField(
                         controller: _nameController,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Full Name',
-                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
                           filled: true,
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -127,13 +127,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       // Email Field
                       TextFormField(
                         controller: _emailController,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Email Address',
-                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
                           filled: true,
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -155,13 +155,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       // Contact Number Field
                       TextFormField(
                         controller: _phoneController,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Contact Number',
-                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.primary),
                           filled: true,
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -187,13 +187,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       // Password Field
                       TextFormField(
                         controller: _passwordController,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                           filled: true,
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -218,20 +218,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         onPressed: isLoading ? null : _signup,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.secondary,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 8,
-                          shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                          shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
                         ),
                         child: isLoading 
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 24, 
                               width: 24, 
                               child: CircularProgressIndicator(
-                                color: AppColors.secondary, 
+                                color: Theme.of(context).colorScheme.surface, 
                                 strokeWidth: 3,
                               ),
                             )

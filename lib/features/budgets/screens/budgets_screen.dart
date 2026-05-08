@@ -115,9 +115,9 @@ class BudgetsScreen extends ConsumerWidget {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text('Spent: ₹${budget.spent.toStringAsFixed(0)}', 
-                                        style: TextStyle(color: isOver ? AppColors.error : Colors.white)),
+                                        style: TextStyle(color: isOver ? AppColors.error : Theme.of(context).colorScheme.onSurface)),
                                       Text('Limit: ₹${budget.limit.toStringAsFixed(0)}', 
-                                        style: const TextStyle(color: AppColors.textSecondary)),
+                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                     ],
                                   ),
                                   if (isOver)

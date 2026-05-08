@@ -15,7 +15,7 @@ class AnalysisScreen extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: recordsAsync.when(
         data: (records) {
           final now = DateTime.now();
@@ -86,7 +86,7 @@ class AnalysisScreen extends ConsumerWidget {
                       )
                     else ...[
                       const Text('Spending Distribution', 
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 24),
                       
                       // Modern Pie Chart
@@ -119,7 +119,7 @@ class AnalysisScreen extends ConsumerWidget {
                                 children: [
                                   const Text('TOTAL', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, letterSpacing: 1.5)),
                                   Text('₹${totalExpense.toStringAsFixed(0)}', 
-                                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ],
@@ -130,7 +130,7 @@ class AnalysisScreen extends ConsumerWidget {
                       const SizedBox(height: 48),
                       
                       const Text('Category Breakdown', 
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       ...sortedEntries.map((entry) {
                         final category = categories.firstWhere((c) => c.name == entry.key, orElse: () => categories.first);
@@ -162,7 +162,7 @@ class AnalysisScreen extends ConsumerWidget {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        Text('₹${entry.value.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                                        Text('₹${entry.value.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
@@ -170,7 +170,7 @@ class AnalysisScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(4),
                                       child: LinearProgressIndicator(
                                         value: percentage,
-                                        backgroundColor: AppColors.background,
+                                        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                                         valueColor: AlwaysStoppedAnimation<Color>(category.color),
                                         minHeight: 6,
                                       ),
@@ -185,7 +185,7 @@ class AnalysisScreen extends ConsumerWidget {
 
                       const SizedBox(height: 48),
                       const Text('Spending Trend', 
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 24),
 
                       // Refined Line Chart
@@ -203,7 +203,7 @@ class AnalysisScreen extends ConsumerWidget {
                               drawVerticalLine: false,
                               horizontalInterval: 250,
                               getDrawingHorizontalLine: (value) => FlLine(
-                                color: AppColors.background.withOpacity(0.2),
+                                color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
                                 strokeWidth: 1,
                               ),
                             ),

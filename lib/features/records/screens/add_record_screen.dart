@@ -49,9 +49,9 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
@@ -62,7 +62,7 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     const Spacer(),
-                    const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                    Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ],
                 ),
               ),
@@ -76,8 +76,8 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
                   child: ElevatedButton(
                     onPressed: () => setState(() => isExpense = true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isExpense ? AppColors.error : AppColors.surface,
-                      foregroundColor: isExpense ? Colors.white : AppColors.textSecondary,
+                      backgroundColor: isExpense ? AppColors.error : Theme.of(context).colorScheme.surface,
+                      foregroundColor: isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     child: const Text('EXPENSE'),
                   ),
@@ -87,8 +87,8 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
                   child: ElevatedButton(
                     onPressed: () => setState(() => isExpense = false),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: !isExpense ? AppColors.success : AppColors.surface,
-                      foregroundColor: !isExpense ? Colors.white : AppColors.textSecondary,
+                      backgroundColor: !isExpense ? AppColors.success : Theme.of(context).colorScheme.surface,
+                      foregroundColor: !isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     child: const Text('INCOME'),
                   ),
@@ -100,12 +100,12 @@ class _AddRecordScreenState extends ConsumerState<AddRecordScreen> {
             TextField(
               controller: amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
-              decoration: const InputDecoration(
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+              decoration: InputDecoration(
                 prefixText: '₹ ',
-                prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                 labelText: 'Amount',
-                labelStyle: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
               ),
             ),
             const SizedBox(height: 16),

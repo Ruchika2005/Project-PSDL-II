@@ -22,12 +22,12 @@ class CategoriesScreen extends ConsumerWidget {
           child: Scaffold(
             body: Column(
               children: [
-                const Material(
-                  color: AppColors.background,
+                Material(
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   child: TabBar(
-                    indicatorColor: AppColors.primary,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     tabs: [
                       Tab(text: 'Expense'),
                       Tab(text: 'Income'),
@@ -139,7 +139,7 @@ class CategoriesScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    const Text('Preview: ', style: TextStyle(color: AppColors.textSecondary)),
+                    Text('Preview: ', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(width: 12),
                     CircleAvatar(
                       backgroundColor: suggestedColor.withOpacity(0.2),

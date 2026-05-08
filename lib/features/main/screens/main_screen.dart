@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,10 +78,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 : _currentIndex == 4 
                                     ? 'Categories' 
                                     : 'Groups',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.0,
                 ),
               ),
@@ -143,11 +144,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           userAsync.when(
             data: (user) => UserAccountsDrawerHeader(
               currentAccountPicture: CircleAvatar(
+                key: ValueKey(user?.profilePhoto),
                 backgroundColor: Colors.white,
-                child: Text(
-                  user?.name[0].toUpperCase() ?? 'U',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
-                ),
+                backgroundImage: user?.profilePhoto.isNotEmpty == true 
+                    ? FileImage(File(user!.profilePhoto)) 
+                    : null,
+                child: user?.profilePhoto.isEmpty == true || user == null
+                    ? Text(
+                        user?.name[0].toUpperCase() ?? 'U',
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      )
+                    : null,
               ),
               accountName: Text(user?.name ?? 'User'),
               accountEmail: Text(user?.email ?? ''),
