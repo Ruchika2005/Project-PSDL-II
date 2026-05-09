@@ -5,6 +5,10 @@ import '../../../models/group_model.dart';
 import '../../../models/expense_model.dart';
 import '../controller/expense_controller.dart';
 import '../../groups/controller/group_controller.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'dart:io';
+import '../../../core/constants/app_colors.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   final GroupModel group;
@@ -20,6 +24,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   SplitType _splitType = SplitType.equal;
   String? _paidBy;
+  File? _billImage;
+  final ImagePicker _picker = ImagePicker();
   
   final Map<String, TextEditingController> _splitControllers = {};
 
@@ -41,6 +47,48 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickAndCropImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 40, // Lower quality for Base64
+        maxWidth: 800,   // Resize to stay under 1MB limit
+        maxHeight: 800,
+      );
+
+      if (image == null) return;
+
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Bill Photo',
+            toolbarColor: AppColors.primary,
+            toolbarWidgetColor: Colors.black,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            activeControlsWidgetColor: AppColors.primary,
+          ),
+          IOSUiSettings(
+            title: 'Crop Bill Photo',
+          ),
+        ],
+      );
+
+      if (croppedFile != null && mounted) {
+        setState(() {
+          _billImage = File(croppedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
   }
 
   void _submit() {
@@ -66,6 +114,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         splits: splits,
         splitType: _splitType,
         context: context,
+        billImage: _billImage,
       );
     }
   }
@@ -183,6 +232,59 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       );
                     }),
                   ],
+                  const SizedBox(height: 24),
+                  
+                  // Bill Photo Section
+                  const Text('BILL PHOTO (OPTIONAL)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey, letterSpacing: 1.2)),
+                  const SizedBox(height: 12),
+                  if (_billImage != null)
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            _billImage!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: CircleAvatar(
+                            backgroundColor: Colors.black54,
+                            child: IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white),
+                              onPressed: () => setState(() => _billImage = null),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: CircleAvatar(
+                            backgroundColor: AppColors.primary,
+                            child: IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.black),
+                              onPressed: _pickAndCropImage,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: _pickAndCropImage,
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('ADD PHOTO OF BILL'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 80),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                      ),
+                    ),
+                  
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: isLoading ? null : _submit,

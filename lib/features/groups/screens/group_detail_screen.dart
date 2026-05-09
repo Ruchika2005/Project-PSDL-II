@@ -13,6 +13,12 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../expenses/screens/expense_detail_screen.dart';
 import '../../../models/expense_model.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import '../../expenses/screens/expense_detail_screen.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -351,20 +357,18 @@ class _ExpensesTab extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.person_pin, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Text('Paid by ', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
-                        ref.watch(memberNamesProvider(group)).when(
-                          data: (map) => Flexible(
-                            child: Text(
-                              map[expense.paidBy] ?? expense.paidBy, 
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ),
-                          loading: () => const Text('...', style: TextStyle(fontSize: 13)),
-                          error: (_, __) => Text(expense.paidBy, style: const TextStyle(fontSize: 13)),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_pin, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Text('Paid by ', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+                            _MemberNameWidget(userId: expense.paidBy, group: group),
+                          ],
                         ),
+                        if (expense.billImageUrl != null && expense.billImageUrl!.isNotEmpty)
+                          const Icon(Icons.receipt_long_rounded, size: 18, color: Colors.grey),
                       ],
                     ),
                     const Divider(height: 24),
@@ -438,46 +442,109 @@ class _ExpensesTab extends ConsumerWidget {
 void _showEditExpenseDialog(BuildContext context, WidgetRef ref, ExpenseModel expense) {
   final descController = TextEditingController(text: expense.description);
   final amountController = TextEditingController(text: expense.amount.toStringAsFixed(2));
+  File? editBillImage;
+  final ImagePicker picker = ImagePicker();
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Edit Expense'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: descController,
-            decoration: const InputDecoration(labelText: 'Description'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Amount'),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-        ElevatedButton(
-          onPressed: () {
-            final newAmount = double.tryParse(amountController.text) ?? 0;
-            if (descController.text.isNotEmpty && newAmount > 0) {
-              ref.read(expenseControllerProvider.notifier).updateExpense(
-                    oldExpense: expense,
-                    newDescription: descController.text.trim(),
-                    newAmount: newAmount,
-                    context: context,
-                  );
-              Navigator.pop(context);
+    builder: (context) => Consumer(
+      builder: (context, ref, child) => StatefulBuilder(
+        builder: (context, setState) {
+        Future<void> pickImage() async {
+          final XFile? image = await picker.pickImage(
+            source: ImageSource.gallery,
+            imageQuality: 40,
+            maxWidth: 800,
+            maxHeight: 800,
+          );
+          if (image == null) return;
+          
+          final croppedFile = await ImageCropper().cropImage(
+            sourcePath: image.path,
+            uiSettings: [
+              AndroidUiSettings(
+                toolbarTitle: 'Crop Bill Photo',
+                toolbarColor: AppColors.primary,
+                toolbarWidgetColor: Colors.black,
+                activeControlsWidgetColor: AppColors.primary,
+              ),
+              IOSUiSettings(title: 'Crop Bill Photo'),
+            ],
+          );
+          
+          if (croppedFile != null) {
+            if (context.mounted) {
+              setState(() => editBillImage = File(croppedFile.path));
             }
-          },
-          child: const Text('UPDATE'),
-        ),
-      ],
+          }
+        }
+
+        return AlertDialog(
+          title: const Text('Edit Expense'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                ),
+                const SizedBox(height: 24),
+                const Text('BILL PHOTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 12),
+                if (editBillImage != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(editBillImage!, height: 100, width: double.infinity, fit: BoxFit.cover),
+                  )
+                else if (expense.billImageUrl != null && expense.billImageUrl!.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ref.watch(billDataProvider(expense.id)).when(
+                      data: (data) => _buildEditPreview(data != null ? 'base64:$data' : expense.billImageUrl!),
+                      loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+                      error: (_, __) => const Icon(Icons.error),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: pickImage,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: Text(expense.billImageUrl != null || editBillImage != null ? 'CHANGE PHOTO' : 'ADD PHOTO'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+            ElevatedButton(
+              onPressed: () {
+                final newAmount = double.tryParse(amountController.text) ?? 0;
+                if (descController.text.isNotEmpty && newAmount > 0) {
+                  ref.read(expenseControllerProvider.notifier).updateExpense(
+                        oldExpense: expense,
+                        newDescription: descController.text.trim(),
+                        newAmount: newAmount,
+                        context: context,
+                        newBillImage: editBillImage,
+                      );
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('UPDATE'),
+            ),
+          ],
+        );
+      },
     ),
-  );
+  ),
+);
 }
 
 void _showDeleteExpenseDialog(BuildContext context, WidgetRef ref, ExpenseModel expense) {
@@ -499,6 +566,44 @@ void _showDeleteExpenseDialog(BuildContext context, WidgetRef ref, ExpenseModel 
       ],
     ),
   );
+}
+
+
+class _MemberNameWidget extends ConsumerWidget {
+  final String userId;
+  final GroupModel group;
+  const _MemberNameWidget({required this.userId, required this.group});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(memberNamesProvider(group)).when(
+      data: (map) => Text(
+        map[userId] ?? userId,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        overflow: TextOverflow.ellipsis,
+      ),
+      loading: () => const Text('...', style: TextStyle(fontSize: 13)),
+      error: (_, __) => Text(userId, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+    );
+  }
+}
+
+Widget _buildEditPreview(String billUrl) {
+  if (billUrl.startsWith('base64:')) {
+    try {
+      return Image.memory(base64Decode(billUrl.substring(7)), height: 100, width: double.infinity, fit: BoxFit.cover);
+    } catch (e) {
+      return Container(height: 100, color: Colors.grey[200], child: const Icon(Icons.broken_image));
+    }
+  } else if (billUrl.startsWith('http')) {
+    return Image.network(billUrl, height: 100, width: double.infinity, fit: BoxFit.cover);
+  } else {
+    final file = File(billUrl);
+    if (file.existsSync()) {
+      return Image.file(file, height: 100, width: double.infinity, fit: BoxFit.cover);
+    }
+    return Container(height: 100, color: Colors.grey[200], child: const Icon(Icons.broken_image_outlined));
+  }
 }
 
 class _MembersTab extends ConsumerWidget {

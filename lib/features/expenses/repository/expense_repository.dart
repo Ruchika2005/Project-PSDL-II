@@ -21,9 +21,13 @@ class ExpenseRepository {
     return _firestore
         .collection('expenses')
         .where('groupId', isEqualTo: groupId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => ExpenseModel.fromMap(doc.data())).toList());
+        .map((snapshot) {
+          final expenses = snapshot.docs.map((doc) => ExpenseModel.fromMap(doc.data())).toList();
+          // Sort in memory to avoid needing a Firestore composite index
+          expenses.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return expenses;
+        });
   }
 
   Future<void> deleteExpense(String expenseId) async {

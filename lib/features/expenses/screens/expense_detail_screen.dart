@@ -5,6 +5,14 @@ import '../../../models/expense_model.dart';
 import '../../../models/group_model.dart';
 import '../../groups/controller/group_controller.dart';
 import '../../../core/constants/app_colors.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import '../repository/bill_repository.dart';
+
+final billDataProvider = FutureProvider.family<String?, String>((ref, expenseId) {
+  return ref.watch(billRepositoryProvider).getBill(expenseId);
+});
 
 class ExpenseDetailScreen extends ConsumerWidget {
   final ExpenseModel expense;
@@ -116,6 +124,67 @@ class ExpenseDetailScreen extends ConsumerWidget {
               ),
             ),
             
+            // Bill Photo Section
+            if (expense.billImageUrl != null && expense.billImageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 32),
+              _buildSectionTitle(context, 'BILL PHOTO'),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => _showFullScreenImage(context, expense.billImageUrl!),
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (expense.billImageUrl != null)
+                          ref.watch(billDataProvider(expense.id)).when(
+                            data: (base64Data) {
+                              if (base64Data == null) {
+                                // Fallback for old local paths
+                                return _buildBillImage(expense.billImageUrl!);
+                              }
+                              return _buildBillImage('base64:$base64Data');
+                            },
+                            loading: () => const Center(child: CircularProgressIndicator()),
+                            error: (e, _) => Center(child: Text('Error: $e')),
+                          )
+                        else
+                          const Center(child: Icon(Icons.image_not_supported)),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withOpacity(0.4),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          alignment: Alignment.bottomRight,
+                          child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 28),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 40),
             
             // Split Type Info
@@ -139,6 +208,49 @@ class ExpenseDetailScreen extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBillImage(String billUrl, {double? height, double? width, BoxFit fit = BoxFit.cover}) {
+    if (billUrl.startsWith('base64:')) {
+      try {
+        final bytes = base64Decode(billUrl.substring(7));
+        return Image.memory(bytes, height: height, width: width, fit: fit);
+      } catch (e) {
+        return const Center(child: Icon(Icons.broken_image));
+      }
+    } else if (billUrl.startsWith('http')) {
+      return Image.network(billUrl, height: height, width: width, fit: fit);
+    } else {
+      final file = File(billUrl);
+      if (file.existsSync()) {
+        return Image.file(file, height: height, width: width, fit: fit);
+      }
+      return Container(
+        color: Colors.grey[200],
+        height: height,
+        width: width,
+        child: const Icon(Icons.image_not_supported),
+      );
+    }
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          iconTheme: const IconThemeData(color: Colors.white),
+          elevation: 0,
+        ),
+        body: Center(
+          child: InteractiveViewer(
+            child: _buildBillImage(imageUrl, fit: BoxFit.contain),
+          ),
         ),
       ),
     );

@@ -31,6 +31,7 @@ class ExpenseModel {
   final SplitType splitType;
   final DateTime createdAt;
   final bool isVerified;
+  final String? billImageUrl;
 
   ExpenseModel({
     required this.id,
@@ -42,6 +43,7 @@ class ExpenseModel {
     required this.splitType,
     required this.createdAt,
     this.isVerified = true,
+    this.billImageUrl,
   });
 
   Map<String, dynamic> toMap() {
@@ -55,6 +57,7 @@ class ExpenseModel {
       'splitType': splitType.name,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'isVerified': isVerified,
+      'billImageUrl': billImageUrl,
     };
   }
 
@@ -69,6 +72,7 @@ class ExpenseModel {
       splitType: SplitType.values.firstWhere((e) => e.name == map['splitType'], orElse: () => SplitType.equal),
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       isVerified: map['isVerified'] ?? true,
+      billImageUrl: map['billImageUrl'],
     );
   }
 
@@ -82,6 +86,7 @@ class ExpenseModel {
     SplitType? splitType,
     DateTime? createdAt,
     bool? isVerified,
+    String? billImageUrl,
   }) {
     return ExpenseModel(
       id: id ?? this.id,
@@ -93,6 +98,7 @@ class ExpenseModel {
       splitType: splitType ?? this.splitType,
       createdAt: createdAt ?? this.createdAt,
       isVerified: isVerified ?? this.isVerified,
+      billImageUrl: billImageUrl ?? this.billImageUrl,
     );
   }
 }

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../repository/expense_repository.dart';
+import '../repository/bill_repository.dart';
 import '../../../models/expense_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'dart:convert';
 
 final expenseControllerProvider = NotifierProvider<ExpenseController, bool>(ExpenseController.new);
 
@@ -14,10 +17,12 @@ final groupExpensesProvider = StreamProvider.family<List<ExpenseModel>, String>(
 
 class ExpenseController extends Notifier<bool> {
   late ExpenseRepository _expenseRepository;
-
+  late BillRepository _billRepository;
+  
   @override
   bool build() {
     _expenseRepository = ref.watch(expenseRepositoryProvider);
+    _billRepository = ref.watch(billRepositoryProvider);
     return false;
   }
 
@@ -29,6 +34,7 @@ class ExpenseController extends Notifier<bool> {
     required List<ExpenseSplit> splits,
     required SplitType splitType,
     required BuildContext context,
+    File? billImage,
   }) async {
     state = true;
     try {
@@ -59,8 +65,16 @@ class ExpenseController extends Notifier<bool> {
           return;
         }
       }
-
+      
       final expenseId = const Uuid().v4();
+      String? billReference;
+      if (billImage != null) {
+        final bytes = await billImage.readAsBytes();
+        final base64Image = base64Encode(bytes);
+        await _billRepository.uploadBill(expenseId, base64Image);
+        billReference = 'link:$expenseId'; // Store a lightweight link instead of full data
+      }
+
       final expense = ExpenseModel(
         id: expenseId,
         groupId: groupId,
@@ -70,6 +84,7 @@ class ExpenseController extends Notifier<bool> {
         splits: splits,
         splitType: splitType,
         createdAt: DateTime.now(),
+        billImageUrl: billReference,
       );
 
       await _expenseRepository.addExpense(expense);
@@ -105,22 +120,38 @@ class ExpenseController extends Notifier<bool> {
     required String newDescription,
     required double newAmount,
     required BuildContext context,
+    File? newBillImage,
   }) async {
     state = true;
     try {
       List<ExpenseSplit> newSplits = oldExpense.splits;
       if (oldExpense.amount != newAmount && oldExpense.amount > 0) {
-        double scale = newAmount / oldExpense.amount;
-        newSplits = oldExpense.splits.map((s) => ExpenseSplit(
-          userId: s.userId,
-          amount: s.amount * scale,
-        )).toList();
+        if (oldExpense.splitType == SplitType.equal) {
+          double splitAmount = newAmount / oldExpense.splits.length;
+          newSplits = oldExpense.splits.map((s) => ExpenseSplit(userId: s.userId, amount: splitAmount)).toList();
+        } else if (oldExpense.splitType == SplitType.unequal) {
+          double scale = newAmount / oldExpense.amount;
+          newSplits = oldExpense.splits.map((s) => ExpenseSplit(
+            userId: s.userId,
+            amount: s.amount * scale,
+          )).toList();
+        }
+        // For percentage, newSplits remains the same as percentages don't change with total amount
+      }
+
+      String? billReference = oldExpense.billImageUrl;
+      if (newBillImage != null) {
+        final bytes = await newBillImage.readAsBytes();
+        final base64Image = base64Encode(bytes);
+        await _billRepository.uploadBill(oldExpense.id, base64Image);
+        billReference = 'link:${oldExpense.id}';
       }
 
       final updatedExpense = oldExpense.copyWith(
         description: newDescription,
         amount: newAmount,
         splits: newSplits,
+        billImageUrl: billReference,
       );
 
       await _expenseRepository.addExpense(updatedExpense);
