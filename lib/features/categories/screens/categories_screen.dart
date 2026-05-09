@@ -177,17 +177,24 @@ class CategoriesScreen extends ConsumerWidget {
                 onPressed: () => Navigator.pop(context),
                 child: const Text('CANCEL'),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  if (nameController.text.trim().isNotEmpty) {
-                    ref.read(categoriesControllerProvider.notifier).addCategory(
-                      nameController.text.trim(),
-                      selectedType,
-                    );
-                    Navigator.pop(context);
-                  }
+              Consumer(
+                builder: (context, ref, child) {
+                  final isLoading = ref.watch(categoriesControllerProvider);
+                  return ElevatedButton(
+                    onPressed: isLoading ? null : () {
+                      if (nameController.text.trim().isNotEmpty) {
+                        ref.read(categoriesControllerProvider.notifier).addCategory(
+                          nameController.text.trim(),
+                          selectedType,
+                        );
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('ADD'),
+                  );
                 },
-                child: const Text('ADD'),
               ),
             ],
           );

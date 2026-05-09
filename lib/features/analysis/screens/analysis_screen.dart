@@ -39,6 +39,22 @@ class AnalysisScreen extends ConsumerWidget {
           final sortedEntries = categorySpending.entries.toList()
             ..sort((a, b) => b.value.compareTo(a.value));
 
+          // Get top categories for trend lines (looking back 6 months)
+          final sixMonthsAgo = DateTime(now.year, now.month - 5, 1);
+          final recentExpenseRecords = records.where((r) => 
+            r.type == RecordType.expense && r.date.isAfter(sixMonthsAgo)
+          ).toList();
+          
+          final Map<String, double> trendCategoryTotals = {};
+          for (var r in recentExpenseRecords) {
+            trendCategoryTotals[r.category] = (trendCategoryTotals[r.category] ?? 0) + r.amount;
+          }
+          
+          final trendCategories = trendCategoryTotals.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          
+          final topTrendCategoryNames = trendCategories.map((e) => e.key).toList();
+
           return categoriesAsync.when(
             data: (categories) {
               return SingleChildScrollView(
@@ -236,7 +252,7 @@ class AnalysisScreen extends ConsumerWidget {
                               rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                             ),
                             borderData: FlBorderData(show: false),
-                            lineBarsData: categorySpending.keys.take(3).indexed.map((indexed) {
+                            lineBarsData: topTrendCategoryNames.indexed.map((indexed) {
                               final index = indexed.$1;
                               final catName = indexed.$2;
                               final lineColors = [Colors.blue, Colors.orange, Colors.pink, Colors.teal, Colors.purple];
@@ -272,7 +288,7 @@ class AnalysisScreen extends ConsumerWidget {
                         child: Wrap(
                           spacing: 16,
                           runSpacing: 8,
-                          children: categorySpending.keys.take(3).indexed.map((indexed) {
+                          children: topTrendCategoryNames.indexed.map((indexed) {
                             final index = indexed.$1;
                             final catName = indexed.$2;
                             final lineColors = [Colors.blue, Colors.orange, Colors.pink, Colors.teal, Colors.purple];
