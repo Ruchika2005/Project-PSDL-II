@@ -14,6 +14,9 @@ import '../../../models/invite_model.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/phone_utils.dart';
+import '../../expenses/repository/expense_repository.dart';
+import '../../../models/expense_model.dart';
+import '../../settlement/controller/settlement_controller.dart';
 
 final groupControllerProvider = NotifierProvider<GroupController, bool>(GroupController.new);
 
@@ -23,6 +26,24 @@ final userGroupsProvider = StreamProvider<List<GroupModel>>((ref) {
     data: (user) {
       if (user == null) return Stream.value([]);
       return ref.watch(groupRepositoryProvider).getUserGroups(user.uid);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});
+
+final allUserExpensesProvider = StreamProvider<List<ExpenseModel>>((ref) {
+  final groupsAsync = ref.watch(userGroupsProvider);
+  return groupsAsync.when(
+    data: (groups) {
+      if (groups.isEmpty) return Stream.value([]);
+      final expenseRepo = ref.watch(expenseRepositoryProvider);
+      final streams = groups.map((g) => expenseRepo.getGroupExpenses(g.id)).toList();
+      
+      return Rx.combineLatest<List<ExpenseModel>, List<ExpenseModel>>(
+        streams,
+        (List<List<ExpenseModel>> values) => values.expand((x) => x).toList(),
+      );
     },
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),
@@ -322,6 +343,38 @@ class GroupController extends Notifier<bool> {
   Future<void> deleteGroup(String groupId, BuildContext context) async {
     state = true;
     try {
+      // Check for unsettled debts before allowing deletion
+      final settlements = ref.read(settlementProvider(groupId));
+      
+      if (settlements.isNotEmpty) {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.red),
+                  SizedBox(width: 10),
+                  Text('Action Blocked'),
+                ],
+              ),
+              content: const Text(
+                'This group cannot be deleted because there are still unsettled debts. '
+                'Please ensure all members have settled their balances before deleting.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('UNDERSTOOD'),
+                ),
+              ],
+            ),
+          );
+        }
+        state = false;
+        return;
+      }
+
       await _groupRepository.deleteGroup(groupId);
       if (context.mounted) {
         Navigator.pop(context); // Go back if on Detail screen
