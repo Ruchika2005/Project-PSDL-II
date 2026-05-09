@@ -11,6 +11,7 @@ import '../../budgets/screens/budgets_screen.dart'; // Budgets Screen
 import '../../finance/controller/finance_controller.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../auth/screens/profile_screen.dart';
+import '../../auth/screens/help_guidance_screen.dart';
 import '../../groups/controller/group_controller.dart';
 import '../../groups/screens/invites_screen.dart';
 import '../../../core/constants/app_colors.dart';
@@ -170,6 +171,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             onTap: () {
               Navigator.pop(context); // Close drawer
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.help_outline_rounded),
+            title: const Text('Help/Guidance'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpGuidanceScreen()));
             },
           ),
           const Divider(),

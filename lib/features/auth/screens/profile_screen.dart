@@ -182,6 +182,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 12),
                 _buildThemeTile(context, ref),
                 
+                const SizedBox(height: 12),
+                _buildThemeTile(context, ref),
+                
                 const SizedBox(height: 48),
                 ElevatedButton.icon(
                   onPressed: () => ref.read(authControllerProvider.notifier).showLogoutConfirmation(context),
