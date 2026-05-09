@@ -206,7 +206,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
                   decoration: const InputDecoration(
                     labelText: 'Initial Amount Owed (₹)',
                     hintText: '0',
-                    prefixIcon: Icon(Icons.money),
+                    prefixIcon: Icon(Icons.currency_rupee),
                   ),
                 ),
               ],

@@ -58,16 +58,23 @@ class AccountsController extends Notifier<bool> {
   }
 
   Future<void> addAccount(String name, double initialBalance) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-    
-    final account = AccountModel(
-      id: const Uuid().v4(),
-      name: name,
-      balance: initialBalance,
-      icon: Icons.account_balance_wallet_outlined,
-    );
-    await _repo.addAccount(userId, account);
+    state = true;
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+      
+      final account = AccountModel(
+        id: const Uuid().v4(),
+        name: name,
+        balance: initialBalance,
+        icon: Icons.account_balance_wallet_outlined,
+      );
+      await _repo.addAccount(userId, account);
+    } catch (e) {
+      debugPrint('Add account failed: $e');
+    } finally {
+      state = false;
+    }
   }
 
   Future<void> updateBalance(String accountId, double amount, RecordType type) async {
@@ -87,9 +94,14 @@ class AccountsController extends Notifier<bool> {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
     
-    final currentAccounts = ref.read(accountsProvider).value ?? [];
-    if (currentAccounts.isEmpty) {
+    // Wait for the stream to provide at least one value
+    final currentAccounts = await ref.read(accountsProvider.future);
+    final existingNames = currentAccounts.map((a) => a.name.toLowerCase()).toSet();
+
+    if (!existingNames.contains('cash')) {
       await addAccount('Cash', 0);
+    }
+    if (!existingNames.contains('bank')) {
       await addAccount('Bank', 0);
     }
   }
@@ -141,17 +153,24 @@ class CategoriesController extends Notifier<bool> {
   }
 
   Future<void> addCategory(String name, CategoryType type) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+    state = true;
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
 
-    final category = CategoryModel(
-      id: const Uuid().v4(),
-      name: name,
-      icon: CategoryModel.getIconForName(name),
-      color: CategoryModel.getColorForName(name),
-      type: type,
-    );
-    await _repo.addCategory(userId, category);
+      final category = CategoryModel(
+        id: const Uuid().v4(),
+        name: name,
+        icon: CategoryModel.getIconForName(name),
+        color: CategoryModel.getColorForName(name),
+        type: type,
+      );
+      await _repo.addCategory(userId, category);
+    } catch (e) {
+      debugPrint('Add category failed: $e');
+    } finally {
+      state = false;
+    }
   }
 
   Future<void> deleteCategory(String categoryId) async {

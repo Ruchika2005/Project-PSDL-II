@@ -102,7 +102,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Amount',
                       prefixText: '₹ ',
-                      prefixIcon: Icon(Icons.attach_money),
+                      prefixIcon: Icon(Icons.currency_rupee),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     validator: (val) => val!.isEmpty ? 'Enter amount' : null,

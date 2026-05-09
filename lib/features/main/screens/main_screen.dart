@@ -58,7 +58,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'SPLITWISE+',
+                'EXPENSEFLOW+',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,

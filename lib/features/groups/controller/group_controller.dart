@@ -195,7 +195,7 @@ class GroupController extends Notifier<bool> {
       await inviteRepo.sendInvite(invite);
       
       if (targetUser == null && normalizedPhone != null && normalizedPhone.isNotEmpty) {
-        final message = 'Hi $inviteeName, I added you to the group "$groupName" on Split Expense Manager. Install the app to join: https://split-expense.page.link/join';
+        final message = 'Hi $inviteeName, I added you to the group "$groupName" on ExpenseFlow. Install the app to join: https://split-expense.page.link/join';
         
         String formattedPhone = normalizedPhone.replaceAll(RegExp(r'\D'), '');
         if (formattedPhone.length == 10) {
